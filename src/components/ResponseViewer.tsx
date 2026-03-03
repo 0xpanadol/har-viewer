@@ -73,7 +73,11 @@ export function ResponseViewer({ content, language, rawBytes, mimeType }: Props)
 
   // Download response
   const handleDownload = useCallback(() => {
-    const ext = language === 'json' ? '.json' : language === 'html' ? '.html' : language === 'xml' ? '.xml' : '.txt'
+    let ext = language === 'json' ? '.json' : language === 'html' ? '.html' : language === 'xml' ? '.xml' : '.txt'
+    if (mimeType) {
+      const sub = mimeType.split('/')[1]?.replace(/\+.*$/, '')
+      if (sub && sub !== 'plain' && sub !== 'octet-stream') ext = `.${sub}`
+    }
     const blob = new Blob([content], { type: mimeType || 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

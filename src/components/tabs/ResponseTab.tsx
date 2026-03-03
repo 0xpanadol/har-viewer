@@ -29,6 +29,47 @@ export function ResponseTab({ entry }: Props) {
   const isImage = /^image\//i.test(content.mimeType) && content.text && content.encoding === 'base64'
   const language = detectLanguage(content.mimeType || '')
 
+  if (isImage) {
+    const handleDownloadImage = () => {
+      const ext = (content.mimeType.split('/')[1] || 'png').replace(/\+.*$/, '')
+      const byteChars = atob(content.text!)
+      const byteArray = new Uint8Array(byteChars.length)
+      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i)
+      const blob = new Blob([byteArray], { type: content.mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `response.${ext}`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+
+    return (
+      <div className="rv-tab-root">
+        <div className="section">
+          <div className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Image Preview</span>
+            <button
+              className="rv-btn"
+              onClick={handleDownloadImage}
+              title="Download image"
+              style={{ marginLeft: 8 }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+          <img
+            src={`data:${content.mimeType};base64,${content.text}`}
+            style={{ maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
+            alt="Response preview"
+          />
+        </div>
+      </div>
+    )
+  }
+
   if (language === 'json') {
     try {
       bodyText = JSON.stringify(JSON.parse(bodyText), null, 2)
@@ -44,17 +85,6 @@ export function ResponseTab({ entry }: Props) {
           rawBytes={content.size || 0}
           mimeType={content.mimeType}
         />
-      )}
-
-      {isImage && (
-        <div className="section">
-          <div className="section-title">Image Preview</div>
-          <img
-            src={`data:${content.mimeType};base64,${content.text}`}
-            style={{ maxWidth: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-            alt="Response preview"
-          />
-        </div>
       )}
     </div>
   )
