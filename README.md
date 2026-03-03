@@ -4,7 +4,7 @@ A fast, offline HAR file viewer built for developers who spend too much time sta
 
 Drop in a `.har` file - even a massive one - and get a clean, searchable, filterable view of every request. No uploads, no servers, everything stays in your browser.
 
-![HAR Viewer](../har-viewer-after-refresh.png)
+![HAR Viewer](screenshot.png)
 
 ## Why this exists
 
