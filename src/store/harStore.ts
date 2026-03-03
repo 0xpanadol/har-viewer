@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab } from '../utils/types'
+import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab, VisibleColumns, OverlayPanel } from '../utils/types'
+import { DEFAULT_VISIBLE_COLUMNS } from '../utils/types'
 import { parseHarEntries } from '../utils/parsers'
 import { saveHarData as saveToIDB, clearHarData as clearFromIDB } from '../utils/storage'
 
@@ -17,12 +18,19 @@ interface HarState {
   activeMethodFilters: string[]
   activeStatusFilters: string[]
   activeTypeFilters: string[]
+  activeDomainFilters: string[]
   checkedEntries: number[]
+  pinnedEntries: number[]
   searchQuery: string
+  useRegex: boolean
+  negateSearch: boolean
   detailPanelWidth: number
   detailPanelOpen: boolean
   activeDetailTab: DetailTab
   scrollTop: number
+  visibleColumns: VisibleColumns
+  overlayPanel: OverlayPanel
+  diffEntries: [number, number] | null
 
   // Computed
   waterfallStart: number
@@ -39,15 +47,25 @@ interface HarState {
   toggleMethodFilter: (method: string) => void
   toggleStatusFilter: (status: string) => void
   toggleTypeFilter: (type: string) => void
+  toggleDomainFilter: (domain: string) => void
   toggleCheck: (idx: number) => void
   checkAll: (indices: number[]) => void
   uncheckAll: (indices: number[]) => void
   clearChecked: () => void
+  togglePin: (idx: number) => void
+  clearPins: () => void
   setSearchQuery: (q: string) => void
+  setUseRegex: (v: boolean) => void
+  setNegateSearch: (v: boolean) => void
   setDetailPanelWidth: (w: number) => void
   setDetailPanelOpen: (open: boolean) => void
   setActiveDetailTab: (tab: DetailTab) => void
   setScrollTop: (top: number) => void
+  setVisibleColumns: (cols: VisibleColumns) => void
+  toggleColumn: (col: keyof VisibleColumns) => void
+  setOverlayPanel: (panel: OverlayPanel) => void
+  setDiffEntries: (entries: [number, number] | null) => void
+  resetFilters: () => void
 }
 
 export const useHarStore = create<HarState>()(
@@ -62,12 +80,19 @@ export const useHarStore = create<HarState>()(
       activeMethodFilters: [],
       activeStatusFilters: [],
       activeTypeFilters: [],
+      activeDomainFilters: [],
       checkedEntries: [],
+      pinnedEntries: [],
       searchQuery: '',
+      useRegex: false,
+      negateSearch: false,
       detailPanelWidth: 420,
       detailPanelOpen: false,
       activeDetailTab: 'headers',
       scrollTop: 0,
+      visibleColumns: { ...DEFAULT_VISIBLE_COLUMNS },
+      overlayPanel: 'none',
+      diffEntries: null,
       waterfallStart: 0,
       waterfallEnd: 0,
 
@@ -87,7 +112,6 @@ export const useHarStore = create<HarState>()(
           waterfallStart: wfStart,
           waterfallEnd: wfEnd,
         })
-        // Persist raw HAR data to IndexedDB (async, fire-and-forget)
         saveToIDB(data)
       },
 
@@ -120,17 +144,22 @@ export const useHarStore = create<HarState>()(
           activeMethodFilters: [],
           activeStatusFilters: [],
           activeTypeFilters: [],
+          activeDomainFilters: [],
           checkedEntries: [],
+          pinnedEntries: [],
           searchQuery: '',
+          useRegex: false,
+          negateSearch: false,
           detailPanelOpen: false,
           scrollTop: 0,
+          overlayPanel: 'none',
+          diffEntries: null,
           waterfallStart: 0,
           waterfallEnd: 0,
         })
       },
 
       setSelectedIdx: (idx) => set({ selectedIdx: idx }),
-
       setSortCol: (col) => set({ sortCol: col }),
       setSortDir: (dir) => set({ sortDir: dir }),
 
@@ -170,6 +199,15 @@ export const useHarStore = create<HarState>()(
           return { activeTypeFilters: filters }
         }),
 
+      toggleDomainFilter: (domain) =>
+        set((state) => {
+          const filters = [...state.activeDomainFilters]
+          const idx = filters.indexOf(domain)
+          if (idx >= 0) filters.splice(idx, 1)
+          else filters.push(domain)
+          return { activeDomainFilters: filters }
+        }),
+
       toggleCheck: (idx) =>
         set((state) => {
           const checked = [...state.checkedEntries]
@@ -195,11 +233,52 @@ export const useHarStore = create<HarState>()(
 
       clearChecked: () => set({ checkedEntries: [] }),
 
+      togglePin: (idx) =>
+        set((state) => {
+          const pins = [...state.pinnedEntries]
+          const pos = pins.indexOf(idx)
+          if (pos >= 0) pins.splice(pos, 1)
+          else pins.push(idx)
+          return { pinnedEntries: pins }
+        }),
+
+      clearPins: () => set({ pinnedEntries: [] }),
+
       setSearchQuery: (q) => set({ searchQuery: q }),
+      setUseRegex: (v) => set({ useRegex: v }),
+      setNegateSearch: (v) => set({ negateSearch: v }),
       setDetailPanelWidth: (w) => set({ detailPanelWidth: w }),
       setDetailPanelOpen: (open) => set({ detailPanelOpen: open }),
       setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
       setScrollTop: (top) => set({ scrollTop: top }),
+      setVisibleColumns: (cols) => set({ visibleColumns: cols }),
+      toggleColumn: (col) =>
+        set((state) => ({
+          visibleColumns: { ...state.visibleColumns, [col]: !state.visibleColumns[col] },
+        })),
+      setOverlayPanel: (panel) => set({ overlayPanel: panel }),
+      setDiffEntries: (entries) => set({ diffEntries: entries }),
+
+      resetFilters: () =>
+        set({
+          selectedIdx: -1,
+          sortCol: 'none',
+          sortDir: 'asc',
+          activeMethodFilters: [],
+          activeStatusFilters: [],
+          activeTypeFilters: [],
+          activeDomainFilters: [],
+          checkedEntries: [],
+          pinnedEntries: [],
+          searchQuery: '',
+          useRegex: false,
+          negateSearch: false,
+          detailPanelOpen: false,
+          overlayPanel: 'none',
+          diffEntries: null,
+          scrollTop: 0,
+          visibleColumns: { ...DEFAULT_VISIBLE_COLUMNS },
+        }),
     }),
     {
       name: 'har-viewer-state',
@@ -210,12 +289,17 @@ export const useHarStore = create<HarState>()(
         activeMethodFilters: state.activeMethodFilters,
         activeStatusFilters: state.activeStatusFilters,
         activeTypeFilters: state.activeTypeFilters,
+        activeDomainFilters: state.activeDomainFilters,
         checkedEntries: state.checkedEntries,
+        pinnedEntries: state.pinnedEntries,
         searchQuery: state.searchQuery,
+        useRegex: state.useRegex,
+        negateSearch: state.negateSearch,
         detailPanelWidth: state.detailPanelWidth,
         detailPanelOpen: state.detailPanelOpen,
         activeDetailTab: state.activeDetailTab,
         scrollTop: state.scrollTop,
+        visibleColumns: state.visibleColumns,
         fileName: state.fileName,
       }),
     }

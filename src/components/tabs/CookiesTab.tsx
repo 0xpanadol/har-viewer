@@ -1,5 +1,6 @@
 import type { ParsedEntry } from '../../utils/types'
 import { tryDecodeBase64, tryParseJson, prettyJson } from '../../utils/parsers'
+import { exportCookiesNetscape, exportCookiesJson, buildCookieHeader } from '../../utils/exporters'
 
 interface Props {
   entry: ParsedEntry
@@ -8,13 +9,26 @@ interface Props {
 export function CookiesTab({ entry }: Props) {
   const reqCookies = entry._raw.request?.cookies || []
   const resCookies = entry._raw.response?.cookies || []
+  const hasCookies = reqCookies.length > 0 || resCookies.length > 0
 
-  if (!reqCookies.length && !resCookies.length) {
+  if (!hasCookies) {
     return <div style={{ color: 'var(--text-3)', padding: 20, textAlign: 'center' }}>No cookies</div>
   }
 
   return (
     <>
+      <div className="cookie-actions">
+        <button className="tool-btn" onClick={() => navigator.clipboard.writeText(buildCookieHeader([entry._raw]))} title="Copy as Cookie header">
+          Copy header
+        </button>
+        <button className="tool-btn" onClick={() => exportCookiesNetscape([entry._raw], `req-${entry._idx + 1}`)} title="Export Netscape cookies.txt">
+          Export .txt
+        </button>
+        <button className="tool-btn" onClick={() => exportCookiesJson([entry._raw], `req-${entry._idx + 1}`)} title="Export cookies JSON">
+          Export JSON
+        </button>
+      </div>
+
       {reqCookies.length > 0 && (
         <div className="section">
           <div className="section-title">

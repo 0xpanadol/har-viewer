@@ -1,13 +1,25 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useHarStore } from '../store/harStore'
 import { useFilteredEntries } from '../hooks/useFilteredEntries'
 import { formatBytes, formatTime, timeClass, statusClass } from '../utils/formatters'
 import { parseUrl } from '../utils/parsers'
 import { ContextMenu } from './ContextMenu'
-import type { ParsedEntry, SortColumn } from '../utils/types'
+import type { ParsedEntry, SortColumn, VisibleColumns } from '../utils/types'
 
 const ROW_H = 32
+
+function buildGridCols(vc: VisibleColumns): string {
+  const parts = ['28px', '36px']
+  if (vc.method) parts.push('60px')
+  if (vc.url) parts.push('minmax(100px,1fr)')
+  if (vc.status) parts.push('120px')
+  if (vc.type) parts.push('80px')
+  if (vc.size) parts.push('80px')
+  if (vc.time) parts.push('80px')
+  if (vc.waterfall) parts.push('1fr')
+  return parts.join(' ')
+}
 
 export function EntryList() {
   const filteredEntries = useFilteredEntries()
@@ -15,20 +27,23 @@ export function EntryList() {
   const setSelectedIdx = useHarStore((s) => s.setSelectedIdx)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
   const checkedEntries = useHarStore((s) => s.checkedEntries)
+  const pinnedEntries = useHarStore((s) => s.pinnedEntries)
   const toggleCheck = useHarStore((s) => s.toggleCheck)
   const checkAll = useHarStore((s) => s.checkAll)
   const uncheckAll = useHarStore((s) => s.uncheckAll)
   const sortCol = useHarStore((s) => s.sortCol)
-  const sortDir = useHarStore((s) => s.sortDir)
   const toggleSort = useHarStore((s) => s.toggleSort)
   const waterfallStart = useHarStore((s) => s.waterfallStart)
   const waterfallEnd = useHarStore((s) => s.waterfallEnd)
   const scrollTop = useHarStore((s) => s.scrollTop)
   const setScrollTop = useHarStore((s) => s.setScrollTop)
+  const visibleColumns = useHarStore((s) => s.visibleColumns)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
   const scrollRestoredRef = useRef(false)
+
+  const gridCols = useMemo(() => buildGridCols(visibleColumns), [visibleColumns])
 
   const virtualizer = useVirtualizer({
     count: filteredEntries.length,
@@ -37,7 +52,6 @@ export function EntryList() {
     overscan: 15,
   })
 
-  // Restore scroll position on mount
   useEffect(() => {
     if (parentRef.current && scrollTop > 0 && !scrollRestoredRef.current && filteredEntries.length > 0) {
       parentRef.current.scrollTop = scrollTop
@@ -45,7 +59,6 @@ export function EntryList() {
     }
   }, [filteredEntries.length])
 
-  // Persist scroll position (debounced)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const handleScroll = useCallback(() => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
@@ -70,7 +83,6 @@ export function EntryList() {
     []
   )
 
-  // Select all checkbox logic
   const allChecked = filteredEntries.length > 0 && filteredEntries.every((e) => checkedEntries.includes(e._idx))
   const someChecked = filteredEntries.some((e) => checkedEntries.includes(e._idx))
 
@@ -80,7 +92,6 @@ export function EntryList() {
     else checkAll(indices)
   }, [filteredEntries, allChecked, checkAll, uncheckAll])
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -108,15 +119,16 @@ export function EntryList() {
   }, [filteredEntries, handleSelectEntry, virtualizer])
 
   const wfRange = waterfallEnd - waterfallStart || 1
+  const vc = visibleColumns
 
   const getSortClass = (col: SortColumn) => {
     if (sortCol !== col) return 'sortable'
-    return `sortable sorted ${sortDir}`
+    return `sortable sorted ${useHarStore.getState().sortDir}`
   }
 
   return (
     <div id="entry-list-wrap">
-      <div id="entry-header">
+      <div id="entry-header" style={{ gridTemplateColumns: gridCols }}>
         <div className="hdr-check">
           <input
             type="checkbox"
@@ -127,13 +139,13 @@ export function EntryList() {
           />
         </div>
         <div>#</div>
-        <div className={getSortClass('method')} onClick={() => toggleSort('method')}>Method</div>
-        <div className={getSortClass('url')} onClick={() => toggleSort('url')}>URL</div>
-        <div className={getSortClass('status')} onClick={() => toggleSort('status')}>Status</div>
-        <div className={getSortClass('type')} onClick={() => toggleSort('type')}>Type</div>
-        <div className={getSortClass('size')} onClick={() => toggleSort('size')}>Size</div>
-        <div className={getSortClass('time')} onClick={() => toggleSort('time')}>Time</div>
-        <div>Waterfall</div>
+        {vc.method && <div className={getSortClass('method')} onClick={() => toggleSort('method')}>Method</div>}
+        {vc.url && <div className={getSortClass('url')} onClick={() => toggleSort('url')}>URL</div>}
+        {vc.status && <div className={getSortClass('status')} onClick={() => toggleSort('status')}>Status</div>}
+        {vc.type && <div className={getSortClass('type')} onClick={() => toggleSort('type')}>Type</div>}
+        {vc.size && <div className={getSortClass('size')} onClick={() => toggleSort('size')}>Size</div>}
+        {vc.time && <div className={getSortClass('time')} onClick={() => toggleSort('time')}>Time</div>}
+        {vc.waterfall && <div>Waterfall</div>}
       </div>
 
       <div id="entry-scroll" ref={parentRef} onScroll={handleScroll}>
@@ -143,13 +155,14 @@ export function EntryList() {
             if (!entry) return null
             const isSelected = entry._idx === selectedIdx
             const isChecked = checkedEntries.includes(entry._idx)
+            const isPinned = pinnedEntries.includes(entry._idx)
             const parsed = parseUrl(entry.url)
 
             return (
               <div
                 key={virtualRow.key}
-                className={`entry-row ${isSelected ? 'selected' : ''} ${isChecked ? 'checked' : ''}`}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_H, transform: `translateY(${virtualRow.start}px)` }}
+                className={`entry-row ${isSelected ? 'selected' : ''} ${isChecked ? 'checked' : ''} ${isPinned ? 'pinned' : ''}`}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_H, transform: `translateY(${virtualRow.start}px)`, gridTemplateColumns: gridCols }}
                 onClick={() => handleSelectEntry(entry._idx)}
                 onContextMenu={(e) => handleContextMenu(e, entry)}
               >
@@ -162,17 +175,22 @@ export function EntryList() {
                     onChange={() => toggleCheck(entry._idx)}
                   />
                 </div>
-                <div className="entry-idx">{entry._idx + 1}</div>
-                <div className={`entry-method ${entry.method}`}>{entry.method}</div>
-                <div className="entry-url">
-                  <span className="host">{parsed.host}</span>
-                  <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
+                <div className="entry-idx">
+                  {isPinned && <span className="pin-icon">★</span>}
+                  {entry._idx + 1}
                 </div>
-                <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>
-                <div className="entry-type">{entry.contentType}</div>
-                <div className="entry-size">{entry.size >= 0 ? formatBytes(entry.size) : '—'}</div>
-                <div className={`entry-time ${timeClass(entry.time)}`}>{formatTime(entry.time)}</div>
-                <WaterfallCell entry={entry} wfRange={wfRange} waterfallStart={waterfallStart} />
+                {vc.method && <div className={`entry-method ${entry.method}`}>{entry.method}</div>}
+                {vc.url && (
+                  <div className="entry-url">
+                    <span className="host">{parsed.host}</span>
+                    <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
+                  </div>
+                )}
+                {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>}
+                {vc.type && <div className="entry-type">{entry.contentType}</div>}
+                {vc.size && <div className="entry-size">{entry.size >= 0 ? formatBytes(entry.size) : '—'}</div>}
+                {vc.time && <div className={`entry-time ${timeClass(entry.time)}`}>{formatTime(entry.time)}</div>}
+                {vc.waterfall && <WaterfallCell entry={entry} wfRange={wfRange} waterfallStart={waterfallStart} />}
               </div>
             )
           })}
@@ -186,8 +204,6 @@ export function EntryList() {
   )
 }
 
-
-// Waterfall cell sub-component
 function WaterfallCell({ entry, wfRange, waterfallStart }: { entry: ParsedEntry; wfRange: number; waterfallStart: number }) {
   if (entry.time <= 0 || wfRange <= 0) {
     return <div className="waterfall-cell"><div className="wf-bar-wrap" /></div>

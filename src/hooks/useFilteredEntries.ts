@@ -7,12 +7,25 @@ export function useFilteredEntries(): ParsedEntry[] {
   const activeMethodFilters = useHarStore((s) => s.activeMethodFilters)
   const activeStatusFilters = useHarStore((s) => s.activeStatusFilters)
   const activeTypeFilters = useHarStore((s) => s.activeTypeFilters)
+  const activeDomainFilters = useHarStore((s) => s.activeDomainFilters)
+  const pinnedEntries = useHarStore((s) => s.pinnedEntries)
   const searchQuery = useHarStore((s) => s.searchQuery)
+  const useRegex = useHarStore((s) => s.useRegex)
+  const negateSearch = useHarStore((s) => s.negateSearch)
   const sortCol = useHarStore((s) => s.sortCol)
   const sortDir = useHarStore((s) => s.sortDir)
 
   return useMemo(() => {
-    const q = searchQuery.toLowerCase()
+    let regex: RegExp | null = null
+    let plainQ = ''
+
+    if (searchQuery) {
+      if (useRegex) {
+        try { regex = new RegExp(searchQuery, 'i') } catch { /* invalid regex, treat as plain */ }
+      }
+      if (!regex) plainQ = searchQuery.toLowerCase()
+    }
+
     let result = allEntries.filter((e) => {
       if (activeMethodFilters.length && !activeMethodFilters.includes(e.method)) return false
       if (activeStatusFilters.length) {
@@ -20,9 +33,18 @@ export function useFilteredEntries(): ParsedEntry[] {
         if (!activeStatusFilters.includes(sg)) return false
       }
       if (activeTypeFilters.length && !activeTypeFilters.includes(e.contentType)) return false
-      if (q) {
-        const haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType}`.toLowerCase()
-        if (!haystack.includes(q)) return false
+      if (activeDomainFilters.length && !activeDomainFilters.includes(e.host)) return false
+
+      if (searchQuery) {
+        const haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType}`
+        let matches: boolean
+        if (regex) {
+          matches = regex.test(haystack)
+        } else {
+          matches = haystack.toLowerCase().includes(plainQ)
+        }
+        if (negateSearch) matches = !matches
+        if (!matches) return false
       }
       return true
     })
@@ -42,6 +64,13 @@ export function useFilteredEntries(): ParsedEntry[] {
       })
     }
 
+    // Pinned entries float to top
+    if (pinnedEntries.length > 0) {
+      const pinned = result.filter((e) => pinnedEntries.includes(e._idx))
+      const unpinned = result.filter((e) => !pinnedEntries.includes(e._idx))
+      result = [...pinned, ...unpinned]
+    }
+
     return result
-  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, searchQuery, sortCol, sortDir])
+  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir])
 }

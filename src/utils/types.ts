@@ -117,3 +117,25 @@ export interface ParsedEntry {
 export type SortColumn = 'none' | 'method' | 'url' | 'status' | 'type' | 'size' | 'time'
 export type SortDirection = 'asc' | 'desc'
 export type DetailTab = 'headers' | 'payload' | 'response' | 'cookies' | 'timing' | 'raw'
+
+export interface VisibleColumns {
+  method: boolean
+  url: boolean
+  status: boolean
+  type: boolean
+  size: boolean
+  time: boolean
+  waterfall: boolean
+}
+
+export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
+  method: true,
+  url: true,
+  status: true,
+  type: true,
+  size: true,
+  time: true,
+  waterfall: true,
+}
+
+export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff'
