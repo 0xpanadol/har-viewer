@@ -1,10 +1,16 @@
 import type { ParsedEntry } from '../../utils/types'
-import { CodeBlock } from '../CodeBlock'
-import { formatBytes } from '../../utils/formatters'
-import { tryDecodeBase64, tryParseJson, prettyJson } from '../../utils/parsers'
+import { ResponseViewer } from '../ResponseViewer'
+import { tryDecodeBase64 } from '../../utils/parsers'
 
 interface Props {
   entry: ParsedEntry
+}
+
+function detectLanguage(mimeType: string): 'json' | 'html' | 'xml' | 'text' {
+  if (/json/i.test(mimeType)) return 'json'
+  if (/html/i.test(mimeType)) return 'html'
+  if (/xml/i.test(mimeType)) return 'xml'
+  return 'text'
 }
 
 export function ResponseTab({ entry }: Props) {
@@ -20,32 +26,24 @@ export function ResponseTab({ entry }: Props) {
     if (decoded) bodyText = decoded
   }
 
-  const jsonParsed = tryParseJson(bodyText)
   const isImage = /^image\//i.test(content.mimeType) && content.text && content.encoding === 'base64'
+  const language = detectLanguage(content.mimeType || '')
+
+  if (language === 'json') {
+    try {
+      bodyText = JSON.stringify(JSON.parse(bodyText), null, 2)
+    } catch { /* keep as-is */ }
+  }
 
   return (
-    <>
-      <div className="section">
-        <div className="section-title">Response Info</div>
-        <table className="kv-table">
-          <tbody>
-            <tr><td className="kv-key">MIME Type</td><td className="kv-val">{content.mimeType || ''}</td></tr>
-            <tr><td className="kv-key">Size</td><td className="kv-val">{formatBytes(content.size || 0)}</td></tr>
-            {content.compression != null && (
-              <tr><td className="kv-key">Compression</td><td className="kv-val">{formatBytes(content.compression)}</td></tr>
-            )}
-            {content.encoding && (
-              <tr><td className="kv-key">Encoding</td><td className="kv-val">{content.encoding}</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
+    <div className="rv-tab-root">
       {bodyText && (
-        <div className="section">
-          <div className="section-title">Body Preview</div>
-          <CodeBlock content={jsonParsed ? prettyJson(jsonParsed) : bodyText} />
-        </div>
+        <ResponseViewer
+          content={bodyText}
+          language={language}
+          rawBytes={content.size || 0}
+          mimeType={content.mimeType}
+        />
       )}
 
       {isImage && (
@@ -58,6 +56,6 @@ export function ResponseTab({ entry }: Props) {
           />
         </div>
       )}
-    </>
+    </div>
   )
 }
