@@ -1,5 +1,5 @@
 import { useHarStore } from '../store/harStore'
-import { exportHarEntries, exportCookiesNetscape, exportCookiesJson } from '../utils/exporters'
+import { exportHarEntries, exportCookiesNetscape, exportCookiesJson, exportCsv, exportSanitizedHar } from '../utils/exporters'
 
 export function SelectionBar() {
   const checkedEntries = useHarStore((s) => s.checkedEntries)
@@ -11,10 +11,13 @@ export function SelectionBar() {
 
   if (checkedEntries.length === 0) return null
 
-  const checkedRaw = allEntries.filter((e) => checkedEntries.includes(e._idx)).map((e) => e._raw)
-  const checkedUrls = allEntries.filter((e) => checkedEntries.includes(e._idx)).map((e) => e.url)
+  const checked = allEntries.filter((e) => checkedEntries.includes(e._idx))
+  const checkedRaw = checked.map((e) => e._raw)
+  const checkedUrls = checked.map((e) => e.url)
 
   const handleExportHar = () => exportHarEntries(checkedRaw, 'selected', harData)
+  const handleExportCsv = () => exportCsv(checked, 'selected')
+  const handleExportSanitized = () => exportSanitizedHar(checkedRaw, 'selected', harData)
   const handleCopyUrls = () => navigator.clipboard.writeText(checkedUrls.join('\n'))
   const handleExportCookiesTxt = () => exportCookiesNetscape(checkedRaw, 'selected')
   const handleExportCookiesJson = () => exportCookiesJson(checkedRaw, 'selected')
@@ -38,6 +41,12 @@ export function SelectionBar() {
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
           <span className="sel-btn-label">HAR</span>
+        </button>
+        <button onClick={handleExportCsv} title="Export selected as CSV">
+          <span style={{ fontSize: 10, fontWeight: 700 }}>CSV</span>
+        </button>
+        <button onClick={handleExportSanitized} title="Export sanitized (redacted) HAR">
+          🔒 <span className="sel-btn-label">Safe</span>
         </button>
         <button onClick={handleCopyUrls} title="Copy URLs to clipboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

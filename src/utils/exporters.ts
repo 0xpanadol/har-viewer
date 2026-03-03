@@ -1,4 +1,4 @@
-import type { HarEntry, HarLog, HarCookie } from './types'
+import type { HarEntry, HarLog, HarCookie, ParsedEntry } from './types'
 
 export function exportHarEntries(
   rawEntries: HarEntry[],
@@ -177,4 +177,91 @@ function downloadBlob(blob: Blob, filename: string) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+/** Export entries as CSV */
+export function exportCsv(entries: ParsedEntry[], label: string): void {
+  const header = 'URL,Method,Status,Size (bytes),Time (ms),Content Type,Domain'
+  const rows = entries.map((e) => {
+    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`
+    return `${esc(e.url)},${e.method},${e.status},${Math.max(0, e.size)},${Math.round(e.time)},${esc(e.contentType)},${esc(e.host)}`
+  })
+  const csv = [header, ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  downloadBlob(blob, `har-export-${entries.length}-${label}.csv`)
+}
+
+/** Sensitive header names to redact */
+const SENSITIVE_HEADERS = new Set([
+  'authorization', 'cookie', 'set-cookie', 'x-api-key', 'x-auth-token',
+  'proxy-authorization', 'x-csrf-token', 'x-xsrf-token', 'x-forwarded-for',
+  'x-real-ip', 'x-amz-security-token', 'x-amz-credential',
+])
+
+/** Export sanitized HAR with sensitive data redacted */
+export function exportSanitizedHar(
+  rawEntries: HarEntry[],
+  label: string,
+  harData: HarLog | null
+): void {
+  const sanitized = rawEntries.map((e) => {
+    const entry = JSON.parse(JSON.stringify(e)) as HarEntry
+    // Redact request headers
+    if (entry.request?.headers) {
+      entry.request.headers = entry.request.headers.map((h) =>
+        SENSITIVE_HEADERS.has(h.name.toLowerCase()) ? { ...h, value: '[REDACTED]' } : h
+      )
+    }
+    // Redact response headers
+    if (entry.response?.headers) {
+      entry.response.headers = entry.response.headers.map((h) =>
+        SENSITIVE_HEADERS.has(h.name.toLowerCase()) ? { ...h, value: '[REDACTED]' } : h
+      )
+    }
+    // Redact cookies
+    if (entry.request?.cookies) {
+      entry.request.cookies = entry.request.cookies.map((c) => ({ ...c, value: '[REDACTED]' }))
+    }
+    if (entry.response?.cookies) {
+      entry.response.cookies = entry.response.cookies.map((c) => ({ ...c, value: '[REDACTED]' }))
+    }
+    // Redact postData if it looks like it contains auth
+    if (entry.request?.postData?.text) {
+      const t = entry.request.postData.text.toLowerCase()
+      if (t.includes('password') || t.includes('token') || t.includes('secret') || t.includes('api_key')) {
+        entry.request.postData.text = '[REDACTED - may contain sensitive data]'
+      }
+    }
+    return entry
+  })
+
+  const exportData = {
+    log: {
+      version: harData?.version || '1.2',
+      creator: { name: 'HAR Viewer (Sanitized)', version: '1.0' },
+      pages: harData?.pages || [],
+      entries: sanitized,
+    },
+  }
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+  downloadBlob(blob, `har-sanitized-${sanitized.length}-${label}.har`)
+}
+
+/** Merge multiple HAR logs into one */
+export function mergeHarLogs(logs: { log: HarLog; fileName: string }[]): HarLog {
+  const allEntries: HarEntry[] = []
+  const allPages: HarLog['pages'] = []
+  for (const { log } of logs) {
+    const entries = log.entries || []
+    allEntries.push(...entries)
+    if (log.pages) allPages.push(...log.pages)
+  }
+  // Sort by startedDateTime
+  allEntries.sort((a, b) => new Date(a.startedDateTime).getTime() - new Date(b.startedDateTime).getTime())
+  return {
+    version: '1.2',
+    creator: { name: 'HAR Viewer (Merged)', version: '1.0' },
+    pages: allPages,
+    entries: allEntries,
+  }
 }

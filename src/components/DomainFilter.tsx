@@ -1,4 +1,5 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useHarStore } from '../store/harStore'
 
 export function DomainFilter() {
@@ -6,15 +7,28 @@ export function DomainFilter() {
   const activeDomainFilters = useHarStore((s) => s.activeDomainFilters)
   const toggleDomainFilter = useHarStore((s) => s.toggleDomainFilter)
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+
+  const toggle = useCallback(() => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen((o) => !o)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    const onClickOutside = (e: MouseEvent) => {
+      if (
+        dropRef.current && !dropRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
   }, [open])
 
   const domains = useMemo(() => {
@@ -26,10 +40,11 @@ export function DomainFilter() {
   if (domains.length <= 1) return null
 
   return (
-    <div className="domain-filter-wrap" ref={ref}>
+    <>
       <button
+        ref={btnRef}
         className={`tool-btn ${activeDomainFilters.length ? 'active' : ''}`}
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         title="Filter by domain"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -39,8 +54,12 @@ export function DomainFilter() {
         </svg>
         Domains{activeDomainFilters.length ? ` (${activeDomainFilters.length})` : ''}
       </button>
-      {open && (
-        <div className="domain-dropdown">
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          className="domain-dropdown"
+          style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
           {domains.map(([domain, count]) => (
             <label key={domain} className="domain-item">
               <input
@@ -52,8 +71,9 @@ export function DomainFilter() {
               <span className="domain-count">{count}</span>
             </label>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }

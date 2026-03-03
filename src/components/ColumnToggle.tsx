@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useHarStore } from '../store/harStore'
 import type { VisibleColumns } from '../utils/types'
 
@@ -16,20 +17,33 @@ export function ColumnToggle() {
   const visibleColumns = useHarStore((s) => s.visibleColumns)
   const toggleColumn = useHarStore((s) => s.toggleColumn)
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+
+  const toggle = useCallback(() => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+    }
+    setOpen((o) => !o)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    const onClickOutside = (e: MouseEvent) => {
+      if (
+        dropRef.current && !dropRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
   }, [open])
 
   return (
-    <div className="col-toggle-wrap" ref={ref}>
-      <button className="tool-btn" onClick={() => setOpen(!open)} title="Toggle columns">
+    <>
+      <button ref={btnRef} className="tool-btn" onClick={toggle} title="Toggle columns">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="7" height="7" />
           <rect x="14" y="3" width="7" height="7" />
@@ -37,8 +51,12 @@ export function ColumnToggle() {
           <rect x="14" y="14" width="7" height="7" />
         </svg>
       </button>
-      {open && (
-        <div className="col-dropdown">
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          className="col-dropdown"
+          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 9999 }}
+        >
           {(Object.keys(COLUMN_LABELS) as (keyof VisibleColumns)[]).map((col) => (
             <label key={col} className="col-item">
               <input
@@ -49,8 +67,9 @@ export function ColumnToggle() {
               {COLUMN_LABELS[col]}
             </label>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }

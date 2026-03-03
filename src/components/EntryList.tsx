@@ -38,12 +38,34 @@ export function EntryList() {
   const scrollTop = useHarStore((s) => s.scrollTop)
   const setScrollTop = useHarStore((s) => s.setScrollTop)
   const visibleColumns = useHarStore((s) => s.visibleColumns)
+  const annotations = useHarStore((s) => s.annotations)
+  const allEntries = useHarStore((s) => s.allEntries)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
   const scrollRestoredRef = useRef(false)
 
   const gridCols = useMemo(() => buildGridCols(visibleColumns), [visibleColumns])
+
+  // Duplicate detection for highlighting
+  const duplicateSet = useMemo(() => {
+    const urlMethodCount: Record<string, number> = {}
+    allEntries.forEach((e) => {
+      const key = `${e.method}:${e.url}`
+      urlMethodCount[key] = (urlMethodCount[key] || 0) + 1
+    })
+    const dupes = new Set<string>()
+    Object.entries(urlMethodCount).forEach(([key, count]) => {
+      if (count > 1) dupes.add(key)
+    })
+    return dupes
+  }, [allEntries])
+
+  const annotationMap = useMemo(() => {
+    const map = new Map<number, string>()
+    annotations.forEach((a) => map.set(a.entryIdx, a.text))
+    return map
+  }, [annotations])
 
   const virtualizer = useVirtualizer({
     count: filteredEntries.length,
@@ -156,15 +178,18 @@ export function EntryList() {
             const isSelected = entry._idx === selectedIdx
             const isChecked = checkedEntries.includes(entry._idx)
             const isPinned = pinnedEntries.includes(entry._idx)
+            const isDuplicate = duplicateSet.has(`${entry.method}:${entry.url}`)
+            const annotation = annotationMap.get(entry._idx)
             const parsed = parseUrl(entry.url)
 
             return (
               <div
                 key={virtualRow.key}
-                className={`entry-row ${isSelected ? 'selected' : ''} ${isChecked ? 'checked' : ''} ${isPinned ? 'pinned' : ''}`}
+                className={`entry-row ${isSelected ? 'selected' : ''} ${isChecked ? 'checked' : ''} ${isPinned ? 'pinned' : ''} ${isDuplicate ? 'duplicate' : ''}`}
                 style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_H, transform: `translateY(${virtualRow.start}px)`, gridTemplateColumns: gridCols }}
                 onClick={() => handleSelectEntry(entry._idx)}
                 onContextMenu={(e) => handleContextMenu(e, entry)}
+                title={annotation ? `📝 ${annotation}` : undefined}
               >
                 <div className="entry-check">
                   <input
@@ -177,11 +202,13 @@ export function EntryList() {
                 </div>
                 <div className="entry-idx">
                   {isPinned && <span className="pin-icon">★</span>}
+                  {annotation && <span style={{ color: 'var(--yellow)', fontSize: 8, marginRight: 1 }}>📝</span>}
                   {entry._idx + 1}
                 </div>
                 {vc.method && <div className={`entry-method ${entry.method}`}>{entry.method}</div>}
                 {vc.url && (
                   <div className="entry-url">
+                    {isDuplicate && <span style={{ color: 'var(--orange)', fontSize: 9, marginRight: 2 }} title="Duplicate request">⊘</span>}
                     <span className="host">{parsed.host}</span>
                     <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
                   </div>

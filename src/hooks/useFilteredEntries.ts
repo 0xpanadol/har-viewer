@@ -14,6 +14,10 @@ export function useFilteredEntries(): ParsedEntry[] {
   const negateSearch = useHarStore((s) => s.negateSearch)
   const sortCol = useHarStore((s) => s.sortCol)
   const sortDir = useHarStore((s) => s.sortDir)
+  const minTime = useHarStore((s) => s.minTime)
+  const maxTime = useHarStore((s) => s.maxTime)
+  const minSize = useHarStore((s) => s.minSize)
+  const maxSize = useHarStore((s) => s.maxSize)
 
   return useMemo(() => {
     let regex: RegExp | null = null
@@ -34,6 +38,13 @@ export function useFilteredEntries(): ParsedEntry[] {
       }
       if (activeTypeFilters.length && !activeTypeFilters.includes(e.contentType)) return false
       if (activeDomainFilters.length && !activeDomainFilters.includes(e.host)) return false
+
+      // Time range filters
+      if (minTime !== null && e.time < minTime) return false
+      if (maxTime !== null && e.time > maxTime) return false
+      // Size range filters
+      if (minSize !== null && e.size < minSize) return false
+      if (maxSize !== null && e.size > maxSize) return false
 
       if (searchQuery) {
         const haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType}`
@@ -72,5 +83,5 @@ export function useFilteredEntries(): ParsedEntry[] {
     }
 
     return result
-  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir])
+  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir, minTime, maxTime, minSize, maxSize])
 }

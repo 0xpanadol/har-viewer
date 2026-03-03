@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import type { ParsedEntry } from '../utils/types'
 import { useHarStore } from '../store/harStore'
-import { exportHarEntries, buildCurl, buildFetch, buildAxios, exportCookiesNetscape, exportCookiesJson, buildCookieHeader } from '../utils/exporters'
+import { exportHarEntries, buildCurl, buildFetch, buildAxios, exportCookiesNetscape, exportCookiesJson, buildCookieHeader, exportSanitizedHar } from '../utils/exporters'
 
 interface Props {
   x: number
@@ -20,6 +20,9 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   const setDiffEntries = useHarStore((s) => s.setDiffEntries)
   const setOverlayPanel = useHarStore((s) => s.setOverlayPanel)
   const selectedIdx = useHarStore((s) => s.selectedIdx)
+  const annotations = useHarStore((s) => s.annotations)
+  const addAnnotation = useHarStore((s) => s.addAnnotation)
+  const removeAnnotation = useHarStore((s) => s.removeAnnotation)
 
   const handleClick = useCallback(
     (action: () => void) => {
@@ -39,11 +42,16 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   const top = Math.min(y, window.innerHeight - 400)
   const isPinned = pinnedEntries.includes(entry._idx)
   const canDiff = selectedIdx >= 0 && selectedIdx !== entry._idx
+  const hasAnnotation = annotations.some((a) => a.entryIdx === entry._idx)
 
   const items: Array<{ label: string; action: () => void; disabled?: boolean } | 'sep'> = [
     {
       label: 'Export this request as HAR',
       action: () => exportHarEntries([entry._raw], 'single', harData),
+    },
+    {
+      label: 'Export sanitized (redacted)',
+      action: () => exportSanitizedHar([entry._raw], 'single', harData),
     },
     {
       label: 'Copy URL',
@@ -75,6 +83,21 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
       action: () => exportCookiesJson([entry._raw], 'single'),
     },
     'sep',
+    {
+      label: hasAnnotation ? '📝 Edit note' : '📝 Add note',
+      action: () => {
+        const existing = annotations.find((a) => a.entryIdx === entry._idx)
+        const text = prompt('Add a note for this request:', existing?.text || '')
+        if (text !== null) {
+          if (text.trim()) addAnnotation(entry._idx, text.trim())
+          else removeAnnotation(entry._idx)
+        }
+      },
+    },
+    ...(hasAnnotation ? [{
+      label: '🗑 Remove note',
+      action: () => removeAnnotation(entry._idx),
+    }] : []),
     {
       label: isPinned ? '★ Unpin this request' : '☆ Pin this request',
       action: () => togglePin(entry._idx),

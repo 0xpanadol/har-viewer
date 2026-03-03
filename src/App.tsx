@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { useHarStore } from './store/harStore'
 import { useFileLoader } from './hooks/useFileLoader'
 import { loadHarData as loadFromIDB } from './utils/storage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { DropZone } from './components/DropZone'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { Welcome } from './components/Welcome'
@@ -15,15 +16,25 @@ import { WaterfallMinimap } from './components/WaterfallMinimap'
 import { StatsPanel } from './components/StatsPanel'
 import { IssuesPanel } from './components/IssuesPanel'
 import { DiffPanel } from './components/DiffPanel'
+import { PerformancePanel } from './components/PerformancePanel'
+import { GroupingPanel } from './components/GroupingPanel'
+import { TimelinePanel } from './components/TimelinePanel'
+import { ComparePanel } from './components/ComparePanel'
 
 export default function App() {
   const allEntries = useHarStore((s) => s.allEntries)
   const fileName = useHarStore((s) => s.fileName)
   const restoreHarData = useHarStore((s) => s.restoreHarData)
   const overlayPanel = useHarStore((s) => s.overlayPanel)
+  const theme = useHarStore((s) => s.theme)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { loading, progress, loadText, loadFile } = useFileLoader()
   const [restoring, setRestoring] = useState(true)
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   // Restore HAR data from IndexedDB on mount
   useEffect(() => {
@@ -121,16 +132,32 @@ export default function App() {
 
       {hasData && (
         <>
-          <Toolbar onOpenFile={handleOpenFile} />
-          <SelectionBar />
+          <ErrorBoundary label="Toolbar">
+            <Toolbar onOpenFile={handleOpenFile} />
+          </ErrorBoundary>
+          <ErrorBoundary label="SelectionBar">
+            <SelectionBar />
+          </ErrorBoundary>
           <WaterfallMinimap />
           <div id="main" className="visible">
-            <EntryList />
+            <ErrorBoundary label="EntryList">
+              <EntryList />
+            </ErrorBoundary>
             <ResizeHandle />
-            <DetailPanel />
-            {overlayPanel === 'stats' && <StatsPanel />}
-            {overlayPanel === 'issues' && <IssuesPanel />}
-            {overlayPanel === 'diff' && <DiffPanel />}
+            <ErrorBoundary label="DetailPanel">
+              <DetailPanel />
+            </ErrorBoundary>
+            <ErrorBoundary label="Overlay">
+              <>
+                {overlayPanel === 'stats' && <StatsPanel />}
+                {overlayPanel === 'issues' && <IssuesPanel />}
+                {overlayPanel === 'diff' && <DiffPanel />}
+                {overlayPanel === 'perf' && <PerformancePanel />}
+                {overlayPanel === 'grouping' && <GroupingPanel />}
+                {overlayPanel === 'timeline' && <TimelinePanel />}
+                {overlayPanel === 'compare' && <ComparePanel />}
+              </>
+            </ErrorBoundary>
           </div>
           <SummaryBar />
         </>

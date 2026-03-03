@@ -10,11 +10,27 @@ export function IssuesPanel() {
   const setSelectedIdx = useHarStore((s) => s.setSelectedIdx)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
 
-  const { errors, slow, large } = useMemo(() => {
+  const { errors, slow, large, duplicates } = useMemo(() => {
     const errors = allEntries.filter((e) => e.status >= 400)
     const slow = allEntries.filter((e) => e.time >= SLOW_THRESHOLD).sort((a, b) => b.time - a.time)
     const large = [...allEntries].sort((a, b) => b.size - a.size).slice(0, 10).filter((e) => e.size > 0)
-    return { errors, slow, large }
+
+    // Duplicate detection
+    const urlMethodMap: Record<string, number[]> = {}
+    allEntries.forEach((e) => {
+      const key = `${e.method}:${e.url}`
+      if (!urlMethodMap[key]) urlMethodMap[key] = []
+      urlMethodMap[key].push(e._idx)
+    })
+    const duplicates = Object.entries(urlMethodMap)
+      .filter(([, indices]) => indices.length > 1)
+      .map(([key, indices]) => {
+        const [method, ...urlParts] = key.split(':')
+        return { method, url: urlParts.join(':'), count: indices.length, indices }
+      })
+      .sort((a, b) => b.count - a.count)
+
+    return { errors, slow, large, duplicates }
   }, [allEntries])
 
   const jumpTo = (idx: number) => {
@@ -22,7 +38,7 @@ export function IssuesPanel() {
     setDetailPanelOpen(true)
   }
 
-  const total = errors.length + slow.length
+  const total = errors.length + slow.length + duplicates.length
   return (
     <div className="overlay-panel">
       <div className="overlay-header">
@@ -40,6 +56,20 @@ export function IssuesPanel() {
               <span className={`issue-status ${statusClass(e.status)}`}>{e.status}</span>
               <span className="issue-method">{e.method}</span>
               <span className="issue-url">{e.url.slice(0, 80)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="section">
+          <div className="section-title">
+            Duplicate Requests <span className="badge">{duplicates.length}</span>
+          </div>
+          {duplicates.length === 0 && <div className="issues-empty">No duplicates found</div>}
+          {duplicates.slice(0, 20).map((d, i) => (
+            <div key={i} className="issue-row" onClick={() => jumpTo(d.indices[0])}>
+              <span className="issue-status" style={{ color: 'var(--orange)', width: 36 }}>×{d.count}</span>
+              <span className="issue-method">{d.method}</span>
+              <span className="issue-url">{d.url.slice(0, 80)}</span>
             </div>
           ))}
         </div>

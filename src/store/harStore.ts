@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab, VisibleColumns, OverlayPanel } from '../utils/types'
+import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab, VisibleColumns, OverlayPanel, Theme, FilterPreset, ValidationWarning, Annotation } from '../utils/types'
 import { DEFAULT_VISIBLE_COLUMNS } from '../utils/types'
-import { parseHarEntries } from '../utils/parsers'
+import { parseHarEntries, validateHar } from '../utils/parsers'
 import { saveHarData as saveToIDB, clearHarData as clearFromIDB } from '../utils/storage'
 
 interface HarState {
@@ -10,8 +10,10 @@ interface HarState {
   harData: HarLog | null
   allEntries: ParsedEntry[]
   fileName: string
+  validationWarnings: ValidationWarning[]
 
   // UI state (persisted)
+  theme: Theme
   selectedIdx: number
   sortCol: SortColumn
   sortDir: SortDirection
@@ -31,6 +33,17 @@ interface HarState {
   visibleColumns: VisibleColumns
   overlayPanel: OverlayPanel
   diffEntries: [number, number] | null
+  // Range filters
+  minTime: number | null
+  maxTime: number | null
+  minSize: number | null
+  maxSize: number | null
+  // Filter presets
+  filterPresets: FilterPreset[]
+  // Annotations
+  annotations: Annotation[]
+  // Compare data
+  compareData: { log: HarLog; fileName: string } | null
 
   // Computed
   waterfallStart: number
@@ -66,14 +79,27 @@ interface HarState {
   setOverlayPanel: (panel: OverlayPanel) => void
   setDiffEntries: (entries: [number, number] | null) => void
   resetFilters: () => void
+  setTheme: (theme: Theme) => void
+  setMinTime: (v: number | null) => void
+  setMaxTime: (v: number | null) => void
+  setMinSize: (v: number | null) => void
+  setMaxSize: (v: number | null) => void
+  saveFilterPreset: (name: string) => void
+  deleteFilterPreset: (id: string) => void
+  applyFilterPreset: (preset: FilterPreset) => void
+  addAnnotation: (entryIdx: number, text: string) => void
+  removeAnnotation: (entryIdx: number) => void
+  setCompareData: (data: { log: HarLog; fileName: string } | null) => void
 }
 
 export const useHarStore = create<HarState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       harData: null,
       allEntries: [],
       fileName: '',
+      validationWarnings: [],
+      theme: 'dark',
       selectedIdx: -1,
       sortCol: 'none',
       sortDir: 'asc',
@@ -93,6 +119,13 @@ export const useHarStore = create<HarState>()(
       visibleColumns: { ...DEFAULT_VISIBLE_COLUMNS },
       overlayPanel: 'none',
       diffEntries: null,
+      minTime: null,
+      maxTime: null,
+      minSize: null,
+      maxSize: null,
+      filterPresets: [],
+      annotations: [],
+      compareData: null,
       waterfallStart: 0,
       waterfallEnd: 0,
 
@@ -105,12 +138,14 @@ export const useHarStore = create<HarState>()(
           wfStart = Math.min(...entries.map((e) => e.startTime))
           wfEnd = Math.max(...entries.map((e) => e.startTime + e.time))
         }
+        const warnings = validateHar(log)
         set({
           harData: log,
           allEntries: entries,
           fileName,
           waterfallStart: wfStart,
           waterfallEnd: wfEnd,
+          validationWarnings: warnings,
         })
         saveToIDB(data)
       },
@@ -124,11 +159,13 @@ export const useHarStore = create<HarState>()(
           wfStart = Math.min(...entries.map((e) => e.startTime))
           wfEnd = Math.max(...entries.map((e) => e.startTime + e.time))
         }
+        const warnings = validateHar(log)
         set({
           harData: log,
           allEntries: entries,
           waterfallStart: wfStart,
           waterfallEnd: wfEnd,
+          validationWarnings: warnings,
         })
       },
 
@@ -156,6 +193,12 @@ export const useHarStore = create<HarState>()(
           diffEntries: null,
           waterfallStart: 0,
           waterfallEnd: 0,
+          minTime: null,
+          maxTime: null,
+          minSize: null,
+          maxSize: null,
+          validationWarnings: [],
+          compareData: null,
         })
       },
 
@@ -278,11 +321,75 @@ export const useHarStore = create<HarState>()(
           diffEntries: null,
           scrollTop: 0,
           visibleColumns: { ...DEFAULT_VISIBLE_COLUMNS },
+          minTime: null,
+          maxTime: null,
+          minSize: null,
+          maxSize: null,
         }),
+
+      setTheme: (theme) => set({ theme }),
+      setMinTime: (v) => set({ minTime: v }),
+      setMaxTime: (v) => set({ maxTime: v }),
+      setMinSize: (v) => set({ minSize: v }),
+      setMaxSize: (v) => set({ maxSize: v }),
+
+      saveFilterPreset: (name) =>
+        set((state) => {
+          const preset: FilterPreset = {
+            id: Date.now().toString(36),
+            name,
+            searchQuery: state.searchQuery,
+            useRegex: state.useRegex,
+            negateSearch: state.negateSearch,
+            activeMethodFilters: [...state.activeMethodFilters],
+            activeStatusFilters: [...state.activeStatusFilters],
+            activeTypeFilters: [...state.activeTypeFilters],
+            activeDomainFilters: [...state.activeDomainFilters],
+            minTime: state.minTime,
+            maxTime: state.maxTime,
+            minSize: state.minSize,
+            maxSize: state.maxSize,
+          }
+          return { filterPresets: [...state.filterPresets, preset] }
+        }),
+
+      deleteFilterPreset: (id) =>
+        set((state) => ({
+          filterPresets: state.filterPresets.filter((p) => p.id !== id),
+        })),
+
+      applyFilterPreset: (preset) =>
+        set({
+          searchQuery: preset.searchQuery,
+          useRegex: preset.useRegex,
+          negateSearch: preset.negateSearch,
+          activeMethodFilters: [...preset.activeMethodFilters],
+          activeStatusFilters: [...preset.activeStatusFilters],
+          activeTypeFilters: [...preset.activeTypeFilters],
+          activeDomainFilters: [...preset.activeDomainFilters],
+          minTime: preset.minTime,
+          maxTime: preset.maxTime,
+          minSize: preset.minSize,
+          maxSize: preset.maxSize,
+        }),
+
+      addAnnotation: (entryIdx, text) =>
+        set((state) => {
+          const filtered = state.annotations.filter((a) => a.entryIdx !== entryIdx)
+          return { annotations: [...filtered, { entryIdx, text, createdAt: Date.now() }] }
+        }),
+
+      removeAnnotation: (entryIdx) =>
+        set((state) => ({
+          annotations: state.annotations.filter((a) => a.entryIdx !== entryIdx),
+        })),
+
+      setCompareData: (data) => set({ compareData: data }),
     }),
     {
       name: 'har-viewer-state',
       partialize: (state) => ({
+        theme: state.theme,
         selectedIdx: state.selectedIdx,
         sortCol: state.sortCol,
         sortDir: state.sortDir,
@@ -301,6 +408,12 @@ export const useHarStore = create<HarState>()(
         scrollTop: state.scrollTop,
         visibleColumns: state.visibleColumns,
         fileName: state.fileName,
+        minTime: state.minTime,
+        maxTime: state.maxTime,
+        minSize: state.minSize,
+        maxSize: state.maxSize,
+        filterPresets: state.filterPresets,
+        annotations: state.annotations,
       }),
     }
   )

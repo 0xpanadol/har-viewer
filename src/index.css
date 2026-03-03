@@ -1,5 +1,5 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
+:root, [data-theme="dark"]{
   --bg-0:#0a0a0c;--bg-1:#111114;--bg-2:#18181c;--bg-3:#1f1f25;--bg-4:#27272e;
   --border:#2a2a33;--border-h:#3a3a45;
   --text-0:#e8e8ed;--text-1:#b0b0ba;--text-2:#78788a;--text-3:#55556a;
@@ -14,6 +14,18 @@
   --radius:6px;--radius-lg:10px;
   --row-h:32px;
   --sidebar-w:420px;
+}
+[data-theme="light"]{
+  --bg-0:#ffffff;--bg-1:#f8f8fa;--bg-2:#f0f0f3;--bg-3:#e4e4e9;--bg-4:#d8d8de;
+  --border:#d0d0d8;--border-h:#b8b8c4;
+  --text-0:#1a1a2e;--text-1:#44445a;--text-2:#6e6e88;--text-3:#9898aa;
+  --accent:#7c3aed;--accent-dim:#6d28d9;--accent-bg:rgba(124,58,237,.08);
+  --green:#16a34a;--green-bg:rgba(22,163,74,.08);
+  --yellow:#ca8a04;--yellow-bg:rgba(202,138,4,.08);
+  --red:#dc2626;--red-bg:rgba(220,38,38,.08);
+  --blue:#2563eb;--blue-bg:rgba(37,99,235,.08);
+  --orange:#ea580c;--orange-bg:rgba(234,88,12,.08);
+  --cyan:#0891b2;
 }
 html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0);font-family:var(--sans);font-size:13px;line-height:1.5}
 
@@ -416,3 +428,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 /* ─── Cookie actions ─── */
 .cookie-actions{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
 .cookie-actions .tool-btn{height:26px;font-size:11px}
+
+
+/* ─── Duplicate request indicator ─── */
+.entry-row.duplicate{border-left:2px solid var(--orange)}
+
+/* ─── Light theme scrollbar ─── */
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:var(--border)}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:var(--border-h)}
+
+/* ─── Light theme context menu shadow ─── */
+[data-theme="light"] .ctx-menu{box-shadow:0 8px 32px rgba(0,0,0,.15)}
+[data-theme="light"] .domain-dropdown{box-shadow:0 8px 32px rgba(0,0,0,.15)}
+[data-theme="light"] .col-dropdown{box-shadow:0 8px 32px rgba(0,0,0,.15)}
+
+/* ─── Light theme drop zone ─── */
+[data-theme="light"] #drop-zone{background:rgba(255,255,255,.92)}
+
+/* ─── Light theme status 5xx ─── */
+[data-theme="light"] .status-5xx{color:var(--red);background:var(--red-bg)}
+
+/* ─── Light theme loading ─── */
+[data-theme="light"] #loading{background:rgba(255,255,255,.95)}

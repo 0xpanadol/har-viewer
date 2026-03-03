@@ -1,4 +1,4 @@
-import type { HarEntry, ParsedEntry } from './types'
+import type { HarEntry, HarLog, ParsedEntry, ValidationWarning } from './types'
 
 export function getContentType(entry: HarEntry): string {
   const ct = entry.response?.content?.mimeType || ''
@@ -77,4 +77,46 @@ export function tryParseJson(s: string): unknown | null {
 
 export function prettyJson(obj: unknown): string {
   return JSON.stringify(obj, null, 2)
+}
+
+/** Validate HAR entries and return warnings */
+export function validateHar(log: HarLog): ValidationWarning[] {
+  const warnings: ValidationWarning[] = []
+  const entries = log.entries || []
+
+  entries.forEach((e, i) => {
+    if (!e.startedDateTime) {
+      warnings.push({ idx: i, type: 'warning', message: 'Missing startedDateTime' })
+    }
+    if (!e.request?.url) {
+      warnings.push({ idx: i, type: 'error', message: 'Missing request URL' })
+    }
+    if (!e.request?.method) {
+      warnings.push({ idx: i, type: 'warning', message: 'Missing request method' })
+    }
+    if (e.response?.bodySize !== undefined && e.response.bodySize < -1) {
+      warnings.push({ idx: i, type: 'warning', message: `Negative body size: ${e.response.bodySize}` })
+    }
+    if (e.response?.content?.size !== undefined && e.response.content.size < -1) {
+      warnings.push({ idx: i, type: 'warning', message: `Negative content size: ${e.response.content.size}` })
+    }
+    if (e.time !== undefined && e.time < 0) {
+      warnings.push({ idx: i, type: 'warning', message: `Negative time: ${e.time}` })
+    }
+    if (!e.timings) {
+      warnings.push({ idx: i, type: 'warning', message: 'Missing timings data' })
+    }
+    if (e.response?.status === 0 && !e.response?.statusText) {
+      warnings.push({ idx: i, type: 'warning', message: 'Status 0 — possibly incomplete/aborted request' })
+    }
+  })
+
+  if (!log.version) {
+    warnings.push({ idx: -1, type: 'warning', message: 'Missing HAR version field' })
+  }
+  if (!log.creator) {
+    warnings.push({ idx: -1, type: 'warning', message: 'Missing HAR creator field' })
+  }
+
+  return warnings
 }

@@ -138,4 +138,40 @@ export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
   waterfall: true,
 }
 
-export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff'
+export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff' | 'perf' | 'grouping' | 'timeline' | 'compare'
+
+export type Theme = 'dark' | 'light'
+
+// Filter presets
+export interface FilterPreset {
+  id: string
+  name: string
+  searchQuery: string
+  useRegex: boolean
+  negateSearch: boolean
+  activeMethodFilters: string[]
+  activeStatusFilters: string[]
+  activeTypeFilters: string[]
+  activeDomainFilters: string[]
+  minTime: number | null
+  maxTime: number | null
+  minSize: number | null
+  maxSize: number | null
+}
+
+// HAR validation
+export interface ValidationWarning {
+  idx: number
+  type: 'error' | 'warning'
+  message: string
+}
+
+// Annotations
+export interface Annotation {
+  entryIdx: number
+  text: string
+  createdAt: number
+}
+
+// Grouping
+export type GroupBy = 'domain' | 'type' | 'status'
