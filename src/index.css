@@ -66,6 +66,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .toolbar-stats{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
 .tool-group{display:flex;align-items:center;gap:4px}
 .tool-sep{width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0}
+
+/* ─── Dropdown menus ─── */
+.drop-menu{position:relative}
+.drop-menu-list{position:absolute;top:100%;right:0;margin-top:4px;min-width:160px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.drop-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;background:none;border:none;border-radius:var(--radius);color:var(--text-1);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left;white-space:nowrap}
+.drop-item:hover{background:var(--bg-3)}
+.drop-item.active{color:var(--accent);background:var(--accent-bg)}
+.drop-item-icon{width:14px;height:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .tool-btn{height:30px;padding:0 10px;background:transparent;border:1px solid transparent;border-radius:var(--radius);color:var(--text-1);cursor:pointer;font-family:var(--sans);font-size:12px;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
 .tool-btn:hover{background:var(--bg-3);border-color:var(--border)}
 .tool-btn.active{background:var(--accent-bg);border-color:var(--accent-dim);color:var(--accent)}
