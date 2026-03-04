@@ -450,3 +450,67 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 
 /* ─── Light theme loading ─── */
 [data-theme="light"] #loading{background:rgba(255,255,255,.95)}
+
+
+/* ─── Confirm Dialog ─── */
+.confirm-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.confirm-dialog{background:var(--bg-2);border:1px solid var(--border-h);border-radius:var(--radius-lg);padding:20px 24px;min-width:320px;max-width:440px;box-shadow:0 16px 48px rgba(0,0,0,.5);animation:dialogIn .15s ease-out}
+@keyframes dialogIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.confirm-title{font-size:15px;font-weight:600;color:var(--text-0);margin-bottom:8px}
+.confirm-message{font-size:13px;color:var(--text-1);line-height:1.5;margin-bottom:20px}
+.confirm-actions{display:flex;justify-content:flex-end;gap:8px}
+.confirm-btn{height:32px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.confirm-btn.cancel{background:transparent;color:var(--text-1)}
+.confirm-btn.cancel:hover{background:var(--bg-3);color:var(--text-0)}
+.confirm-btn.default{background:var(--accent-dim);color:#fff;border-color:var(--accent-dim)}
+.confirm-btn.default:hover{background:var(--accent)}
+.confirm-btn.danger{background:var(--red);color:#fff;border-color:var(--red)}
+.confirm-btn.danger:hover{background:#ef4444;border-color:#ef4444}
+
+/* ─── Note Editor ─── */
+.note-backdrop{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;animation:fadeIn .12s ease-out}
+.note-modal{background:var(--bg-1);border:1px solid var(--border-h);border-radius:12px;width:440px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:dialogIn .15s ease-out;overflow:hidden;display:flex;flex-direction:column}
+.note-modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;gap:8px}
+.note-modal-title{font-size:14px;font-weight:600;color:var(--text-0)}
+.note-close{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-2);cursor:pointer;border-radius:var(--radius);font-size:14px;transition:all .15s}
+.note-close:hover{background:var(--bg-3);color:var(--text-0)}
+.note-entry-label{padding:0 16px 10px;font-family:var(--mono);font-size:10px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--border);line-height:1.4}
+.note-textarea{width:100%;border:none;background:var(--bg-0);color:var(--text-0);font-family:var(--sans);font-size:13px;line-height:1.6;padding:14px 16px;resize:none;min-height:120px;outline:none;transition:background .15s}
+.note-textarea:focus{background:var(--bg-0)}
+.note-textarea::placeholder{color:var(--text-3)}
+.note-modal-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 14px;border-top:1px solid var(--border);gap:8px}
+.note-hint{font-size:11px;color:var(--text-3);white-space:nowrap}
+.note-actions{display:flex;gap:8px}
+.note-btn{height:30px;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.note-btn.cancel{background:transparent;color:var(--text-1)}
+.note-btn.cancel:hover{background:var(--bg-3)}
+.note-btn.save{background:var(--accent-dim);color:#fff;border-color:var(--accent-dim)}
+.note-btn.save:hover{background:var(--accent)}
+.note-btn.delete{background:transparent;color:var(--red);border-color:var(--red)}
+.note-btn.delete:hover{background:var(--red-bg)}
+
+/* ─── Overlay Resize Handle ─── */
+.overlay-resize-handle{position:absolute;left:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:25;transition:background .2s}
+.overlay-resize-handle:hover{background:var(--accent-dim)}
+
+/* ─── Delete button in selection bar ─── */
+.sel-delete-btn{background:rgba(248,113,113,.2)!important}
+.sel-delete-btn:hover{background:rgba(248,113,113,.35)!important}
+
+/* ─── Delete button in toolbar ─── */
+.tool-btn-delete{color:var(--red)}
+.tool-btn-delete:hover{background:var(--red-bg)!important;border-color:var(--red)!important}
+
+/* ─── Light theme overrides for new components ─── */
+[data-theme="light"] .confirm-backdrop{background:rgba(0,0,0,.3)}
+[data-theme="light"] .confirm-dialog{box-shadow:0 16px 48px rgba(0,0,0,.15)}
+[data-theme="light"] .note-editor{box-shadow:0 8px 32px rgba(0,0,0,.15)}
+[data-theme="light"] .note-backdrop{background:rgba(0,0,0,.15)}
+
+/* ─── URL Tooltip ─── */
+.url-tooltip{position:fixed;z-index:900;background:var(--bg-2);border:1px solid var(--border-h);border-radius:var(--radius-lg);padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text-0);max-width:500px;word-break:break-all;white-space:pre-wrap;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none;animation:ctxIn .1s ease-out}
+.url-tooltip-host{color:var(--text-2)}
+.url-tooltip-path{color:var(--accent)}
+.url-tooltip-query{color:var(--green);font-size:10px;margin-top:6px;border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;gap:1px}
+[data-theme="light"] .url-tooltip{box-shadow:0 8px 24px rgba(0,0,0,.12)}

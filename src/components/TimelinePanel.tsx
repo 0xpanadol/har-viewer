@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useHarStore } from '../store/harStore'
 import { formatTime, formatBytes } from '../utils/formatters'
+import { ResizableOverlay } from './ResizableOverlay'
 
 const LANE_H = 18
 const LANE_GAP = 2
@@ -45,7 +46,7 @@ export function TimelinePanel() {
   }
 
   return (
-    <div className="overlay-panel" style={{ width: 700 }}>
+    <ResizableOverlay initialWidth={700} minWidth={400}>
       <div className="overlay-header">
         <span className="overlay-title">Timeline / Flame Graph</span>
         <button className="detail-close" onClick={() => setOverlayPanel('none')}>✕</button>
@@ -124,6 +125,6 @@ export function TimelinePanel() {
           </div>
         )}
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }

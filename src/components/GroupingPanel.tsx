@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useHarStore } from '../store/harStore'
 import { formatBytes, formatTime } from '../utils/formatters'
+import { ResizableOverlay } from './ResizableOverlay'
 import type { GroupBy, ParsedEntry } from '../utils/types'
 
 export function GroupingPanel() {
@@ -33,7 +34,7 @@ export function GroupingPanel() {
   }, [allEntries, groupBy])
 
   return (
-    <div className="overlay-panel">
+    <ResizableOverlay initialWidth={420}>
       <div className="overlay-header">
         <span className="overlay-title">Request Grouping</span>
         <button className="detail-close" onClick={() => setOverlayPanel('none')}>✕</button>
@@ -75,6 +76,6 @@ export function GroupingPanel() {
           </tbody>
         </table>
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }

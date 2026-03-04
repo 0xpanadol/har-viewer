@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react'
 import { useHarStore } from '../store/harStore'
 import { formatBytes, formatTime } from '../utils/formatters'
 import { parseHarEntries } from '../utils/parsers'
+import { ResizableOverlay } from './ResizableOverlay'
 import type { HarLog } from '../utils/types'
 
 export function ComparePanel() {
@@ -32,7 +33,7 @@ export function ComparePanel() {
   const statsB = useMemo(() => compareEntries ? computeStats(compareEntries) : null, [compareEntries])
 
   return (
-    <div className="overlay-panel diff-panel" style={{ width: 600 }}>
+    <ResizableOverlay initialWidth={600} minWidth={400} className="diff-panel">
       <div className="overlay-header">
         <span className="overlay-title">Multi-File Compare</span>
         <button className="detail-close" onClick={() => setOverlayPanel('none')}>✕</button>
@@ -106,7 +107,7 @@ export function ComparePanel() {
           </>
         )}
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }
 

@@ -1,7 +1,8 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import type { ParsedEntry } from '../utils/types'
 import { useHarStore } from '../store/harStore'
-import { exportHarEntries, buildCurl, buildFetch, buildAxios, exportCookiesNetscape, exportCookiesJson, buildCookieHeader, exportSanitizedHar } from '../utils/exporters'
+import { exportHarEntries, buildCurl, buildFetch, buildAxios, buildPythonRequests, buildWget, buildPowerShell, buildHTTPie, exportCookiesNetscape, exportCookiesJson, buildCookieHeader, exportSanitizedHar } from '../utils/exporters'
+import { NoteEditor } from './NoteEditor'
 
 interface Props {
   x: number
@@ -24,6 +25,8 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   const addAnnotation = useHarStore((s) => s.addAnnotation)
   const removeAnnotation = useHarStore((s) => s.removeAnnotation)
 
+  const [noteEditor, setNoteEditor] = useState(false)
+
   const handleClick = useCallback(
     (action: () => void) => {
       onClose()
@@ -33,16 +36,18 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   )
 
   useEffect(() => {
+    if (noteEditor) return // Don't close when note editor is open
     const handler = () => onClose()
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
-  }, [onClose])
+  }, [onClose, noteEditor])
 
   const left = Math.min(x, window.innerWidth - 240)
   const top = Math.min(y, window.innerHeight - 400)
   const isPinned = pinnedEntries.includes(entry._idx)
   const canDiff = selectedIdx >= 0 && selectedIdx !== entry._idx
   const hasAnnotation = annotations.some((a) => a.entryIdx === entry._idx)
+  const existingNote = annotations.find((a) => a.entryIdx === entry._idx)
 
   const items: Array<{ label: string; action: () => void; disabled?: boolean } | 'sep'> = [
     {
@@ -57,6 +62,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
       label: 'Copy URL',
       action: () => navigator.clipboard.writeText(entry.url),
     },
+    'sep',
     {
       label: 'Copy as cURL',
       action: () => navigator.clipboard.writeText(buildCurl(entry._raw)),
@@ -68,6 +74,22 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     {
       label: 'Copy as axios',
       action: () => navigator.clipboard.writeText(buildAxios(entry._raw)),
+    },
+    {
+      label: 'Copy as Python requests',
+      action: () => navigator.clipboard.writeText(buildPythonRequests(entry._raw)),
+    },
+    {
+      label: 'Copy as wget',
+      action: () => navigator.clipboard.writeText(buildWget(entry._raw)),
+    },
+    {
+      label: 'Copy as PowerShell',
+      action: () => navigator.clipboard.writeText(buildPowerShell(entry._raw)),
+    },
+    {
+      label: 'Copy as HTTPie',
+      action: () => navigator.clipboard.writeText(buildHTTPie(entry._raw)),
     },
     'sep',
     {
@@ -86,12 +108,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     {
       label: hasAnnotation ? '📝 Edit note' : '📝 Add note',
       action: () => {
-        const existing = annotations.find((a) => a.entryIdx === entry._idx)
-        const text = prompt('Add a note for this request:', existing?.text || '')
-        if (text !== null) {
-          if (text.trim()) addAnnotation(entry._idx, text.trim())
-          else removeAnnotation(entry._idx)
-        }
+        // handled specially below — not through handleClick
       },
     },
     ...(hasAnnotation ? [{
@@ -148,14 +165,33 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     },
   ]
 
+  if (noteEditor) {
+    return (
+      <NoteEditor
+        entryLabel={`#${entry._idx + 1} ${entry.method} ${entry.url}`}
+        initialText={existingNote?.text || ''}
+        onSave={(text) => { addAnnotation(entry._idx, text); onClose() }}
+        onDelete={() => { removeAnnotation(entry._idx); onClose() }}
+        onClose={onClose}
+      />
+    )
+  }
+
   return (
     <div className="ctx-menu" style={{ left, top }} onClick={(e) => e.stopPropagation()}>
       {items.map((item, i) => {
         if (item === 'sep') return <div key={i} className="ctx-sep" />
+        const isNoteBtn = item.label.includes('Add note') || item.label.includes('Edit note')
         return (
           <button
             key={i}
-            onClick={() => handleClick(item.action)}
+            onClick={() => {
+              if (isNoteBtn) {
+                setNoteEditor(true)
+              } else {
+                handleClick(item.action)
+              }
+            }}
             style={item.disabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
           >
             {item.label}
@@ -165,6 +201,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     </div>
   )
 }
+
 
 async function replayRequest(entry: ParsedEntry) {
   const raw = entry._raw
@@ -191,6 +228,6 @@ async function replayRequest(entry: ParsedEntry) {
       resultWindow.document.body.textContent = `Status: ${resp.status} ${resp.statusText}\n\n--- Headers ---\n${[...resp.headers.entries()].map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n--- Body ---\n${body.slice(0, 50000)}`
     }
   } catch (err) {
-    alert(`Replay failed: ${err instanceof Error ? err.message : String(err)}\n\nThis is expected for cross-origin requests or requests requiring auth.`)
+    console.error('Replay failed:', err instanceof Error ? err.message : String(err))
   }
 }

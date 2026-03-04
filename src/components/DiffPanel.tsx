@@ -1,5 +1,6 @@
 import { useHarStore } from '../store/harStore'
 import { formatBytes, formatTime, statusClass } from '../utils/formatters'
+import { ResizableOverlay } from './ResizableOverlay'
 import type { ParsedEntry, HarHeader } from '../utils/types'
 
 export function DiffPanel() {
@@ -16,7 +17,7 @@ export function DiffPanel() {
   const close = () => { setDiffEntries(null); setOverlayPanel('none') }
 
   return (
-    <div className="overlay-panel diff-panel">
+    <ResizableOverlay initialWidth={700} minWidth={400} className="diff-panel">
       <div className="overlay-header">
         <span className="overlay-title">Diff: #{a._idx + 1} vs #{b._idx + 1}</span>
         <button className="detail-close" onClick={close}>✕</button>
@@ -59,7 +60,7 @@ export function DiffPanel() {
           </div>
         </div>
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }
 

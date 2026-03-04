@@ -247,6 +247,109 @@ export function exportSanitizedHar(
   downloadBlob(blob, `har-sanitized-${sanitized.length}-${label}.har`)
 }
 
+/** Build Python requests snippet */
+export function buildPythonRequests(raw: HarEntry): string {
+  const url = raw.request?.url || ''
+  const method = (raw.request?.method || 'GET').toLowerCase()
+  const headers: Record<string, string> = {}
+    ; (raw.request?.headers || []).forEach((h) => {
+      const n = h.name.toLowerCase()
+      if (n === 'host' || n === 'content-length' || n === 'connection') return
+      headers[h.name] = h.value
+    })
+  const cookies = (raw.request?.cookies || []).map((c) => `${c.name}=${c.value}`).join('; ')
+  if (cookies) headers['Cookie'] = cookies
+
+  let code = `import requests\n\n`
+  code += `response = requests.${method.toLowerCase()}(\n`
+  code += `    '${url}'`
+  if (Object.keys(headers).length) {
+    code += `,\n    headers=${JSON.stringify(headers, null, 4).replace(/\n/g, '\n    ')}`
+  }
+  if (raw.request?.postData?.text) {
+    try {
+      JSON.parse(raw.request.postData.text)
+      code += `,\n    json=${raw.request.postData.text}`
+    } catch {
+      code += `,\n    data=${JSON.stringify(raw.request.postData.text)}`
+    }
+  }
+  code += `\n)\n\nprint(response.status_code)\nprint(response.text)`
+  return code
+}
+
+/** Build wget command */
+export function buildWget(raw: HarEntry): string {
+  const url = raw.request?.url || ''
+  let cmd = `wget '${url}'`
+    ; (raw.request?.headers || []).forEach((h) => {
+      const n = h.name.toLowerCase()
+      if (n === 'host' || n === 'content-length' || n === 'connection' || n === 'cookie') return
+      cmd += ` \\\n  --header='${h.name}: ${h.value}'`
+    })
+  const cookies = (raw.request?.cookies || []).map((c) => `${c.name}=${c.value}`).join('; ')
+  if (cookies) cmd += ` \\\n  --header='Cookie: ${cookies}'`
+  if (raw.request?.method && raw.request.method !== 'GET') {
+    cmd += ` \\\n  --method=${raw.request.method}`
+  }
+  if (raw.request?.postData?.text) {
+    cmd += ` \\\n  --body-data='${raw.request.postData.text.replace(/'/g, "'\\''")}'`
+  }
+  cmd += ` \\\n  -O -`
+  return cmd
+}
+
+/** Build PowerShell Invoke-WebRequest snippet */
+export function buildPowerShell(raw: HarEntry): string {
+  const url = raw.request?.url || ''
+  const method = raw.request?.method || 'GET'
+  const headers: Record<string, string> = {}
+    ; (raw.request?.headers || []).forEach((h) => {
+      const n = h.name.toLowerCase()
+      if (n === 'host' || n === 'content-length' || n === 'connection') return
+      headers[h.name] = h.value
+    })
+  const cookies = (raw.request?.cookies || []).map((c) => `${c.name}=${c.value}`).join('; ')
+  if (cookies) headers['Cookie'] = cookies
+
+  let code = `$headers = @{\n`
+  Object.entries(headers).forEach(([k, v]) => {
+    code += `    '${k}' = '${v.replace(/'/g, "''")}'\n`
+  })
+  code += `}\n\n`
+  code += `$response = Invoke-WebRequest -Uri '${url}' -Method ${method} -Headers $headers`
+  if (raw.request?.postData?.text) {
+    code += ` -Body '${raw.request.postData.text.replace(/'/g, "''")}'`
+  }
+  code += `\n\n$response.StatusCode\n$response.Content`
+  return code
+}
+
+/** Build HTTPie command */
+export function buildHTTPie(raw: HarEntry): string {
+  const url = raw.request?.url || ''
+  const method = raw.request?.method || 'GET'
+  let cmd = `http ${method} '${url}'`
+    ; (raw.request?.headers || []).forEach((h) => {
+      const n = h.name.toLowerCase()
+      if (n === 'host' || n === 'content-length' || n === 'connection' || n === 'cookie') return
+      cmd += ` \\\n  '${h.name}:${h.value}'`
+    })
+  const cookies = (raw.request?.cookies || []).map((c) => `${c.name}=${c.value}`).join('; ')
+  if (cookies) cmd += ` \\\n  'Cookie:${cookies}'`
+  if (raw.request?.postData?.text) {
+    try {
+      const json = JSON.parse(raw.request.postData.text)
+      Object.entries(json).forEach(([k, v]) => {
+        cmd += ` \\\n  ${k}=${JSON.stringify(v)}`
+      })
+    } catch {
+      cmd += ` \\\n  --raw='${raw.request.postData.text.replace(/'/g, "'\\''")}'`
+    }
+  }
+  return cmd
+}
+
 /** Merge multiple HAR logs into one */
 export function mergeHarLogs(logs: { log: HarLog; fileName: string }[]): HarLog {
   const allEntries: HarEntry[] = []

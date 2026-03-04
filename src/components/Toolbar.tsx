@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useHarStore } from '../store/harStore'
 import { useFilteredEntries } from '../hooks/useFilteredEntries'
 import { FilterPills } from './FilterPills'
@@ -7,6 +7,7 @@ import { ColumnToggle } from './ColumnToggle'
 import { RangeFilters } from './RangeFilters'
 import { FilterPresets } from './FilterPresets'
 import { ValidationBadge } from './ValidationBadge'
+import { ConfirmDialog } from './ConfirmDialog'
 import { formatBytes, formatTime } from '../utils/formatters'
 import { exportHarEntries, exportCsv, exportSanitizedHar, mergeHarLogs } from '../utils/exporters'
 import type { HarLog } from '../utils/types'
@@ -41,6 +42,10 @@ export function Toolbar({ onOpenFile }: Props) {
   const fileName = useHarStore((s) => s.fileName)
   const filteredEntries = useFilteredEntries()
   const mergeRef = useRef<HTMLInputElement>(null)
+  const selectedIdx = useHarStore((s) => s.selectedIdx)
+  const pinnedEntries = useHarStore((s) => s.pinnedEntries)
+  const deleteEntries = useHarStore((s) => s.deleteEntries)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { methods, statuses, types } = useMemo(() => {
     const methods: Record<string, number> = {}
@@ -120,6 +125,15 @@ export function Toolbar({ onOpenFile }: Props) {
     exportSanitizedHar(entries, 'sanitized', harData)
   }
 
+  const handleDeleteSelected = () => {
+    if (selectedIdx < 0) return
+    if (pinnedEntries.includes(selectedIdx)) {
+      setConfirmDelete(true)
+    } else {
+      deleteEntries([selectedIdx], filteredEntries.map((e) => e._idx))
+    }
+  }
+
   const handleMerge = async (file: File) => {
     try {
       const text = await file.text()
@@ -142,6 +156,7 @@ export function Toolbar({ onOpenFile }: Props) {
   const hasActiveFilters = !!(searchQuery || activeMethodFilters.length || activeStatusFilters.length || activeTypeFilters.length || minTime !== null || maxTime !== null || minSize !== null || maxSize !== null)
 
   return (
+    <>
     <div id="toolbar" className="visible">
       <input
         type="file"
@@ -268,6 +283,13 @@ export function Toolbar({ onOpenFile }: Props) {
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
+          {selectedIdx >= 0 && (
+            <button className="tool-btn tool-btn-icon tool-btn-delete" onClick={handleDeleteSelected} title="Delete selected request">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </button>
+          )}
           <button
             className="tool-btn tool-btn-icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -314,5 +336,16 @@ export function Toolbar({ onOpenFile }: Props) {
         </div>
       </div>
     </div>
+    {confirmDelete && (
+      <ConfirmDialog
+        title="Delete pinned entry?"
+        message="This request is pinned. Are you sure you want to delete it?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => { deleteEntries([selectedIdx], filteredEntries.map((e) => e._idx)); setConfirmDelete(false) }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    )}
+    </>
   )
 }

@@ -1,10 +1,13 @@
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useHarStore } from '../store/harStore'
 import { useFilteredEntries } from '../hooks/useFilteredEntries'
 import { formatBytes, formatTime, timeClass, statusClass } from '../utils/formatters'
 import { parseUrl } from '../utils/parsers'
 import { ContextMenu } from './ContextMenu'
+import { NoteEditor } from './NoteEditor'
+import { ConfirmDialog } from './ConfirmDialog'
 import type { ParsedEntry, SortColumn, VisibleColumns } from '../utils/types'
 
 const ROW_H = 32
@@ -40,9 +43,14 @@ export function EntryList() {
   const visibleColumns = useHarStore((s) => s.visibleColumns)
   const annotations = useHarStore((s) => s.annotations)
   const allEntries = useHarStore((s) => s.allEntries)
+  const addAnnotation = useHarStore((s) => s.addAnnotation)
+  const removeAnnotation = useHarStore((s) => s.removeAnnotation)
+  const deleteEntries = useHarStore((s) => s.deleteEntries)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
+  const [notePopup, setNotePopup] = useState<number | null>(null)
+  const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null)
   const scrollRestoredRef = useRef(false)
 
   const gridCols = useMemo(() => buildGridCols(visibleColumns), [visibleColumns])
@@ -124,6 +132,17 @@ export function EntryList() {
         e.preventDefault()
         document.getElementById('search-input')?.focus()
       }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const state = useHarStore.getState()
+        if (state.selectedIdx >= 0 && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+          e.preventDefault()
+          if (state.pinnedEntries.includes(state.selectedIdx)) {
+            setConfirmDeleteIdx(state.selectedIdx)
+          } else {
+            state.deleteEntries([state.selectedIdx], filteredEntries.map((en) => en._idx))
+          }
+        }
+      }
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         if (!filteredEntries.length) return
         e.preventDefault()
@@ -202,16 +221,12 @@ export function EntryList() {
                 </div>
                 <div className="entry-idx">
                   {isPinned && <span className="pin-icon">★</span>}
-                  {annotation && <span style={{ color: 'var(--yellow)', fontSize: 8, marginRight: 1 }}>📝</span>}
+                  {annotation && <span style={{ color: 'var(--yellow)', fontSize: 8, marginRight: 1, cursor: 'pointer' }} title="Click to edit note" onClick={(e) => { e.stopPropagation(); setNotePopup(entry._idx) }}>📝</span>}
                   {entry._idx + 1}
                 </div>
                 {vc.method && <div className={`entry-method ${entry.method}`}>{entry.method}</div>}
                 {vc.url && (
-                  <div className="entry-url">
-                    {isDuplicate && <span style={{ color: 'var(--orange)', fontSize: 9, marginRight: 2 }} title="Duplicate request">⊘</span>}
-                    <span className="host">{parsed.host}</span>
-                    <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
-                  </div>
+                  <UrlCell entry={entry} isDuplicate={isDuplicate} parsed={parsed} />
                 )}
                 {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>}
                 {vc.type && <div className="entry-type">{entry.contentType}</div>}
@@ -226,6 +241,28 @@ export function EntryList() {
 
       {ctxMenu && (
         <ContextMenu x={ctxMenu.x} y={ctxMenu.y} entry={ctxMenu.entry} onClose={() => setCtxMenu(null)} />
+      )}
+      {notePopup !== null && (() => {
+        const noteEntry = allEntries[notePopup]
+        return (
+          <NoteEditor
+            entryLabel={noteEntry ? `#${noteEntry._idx + 1} ${noteEntry.method} ${noteEntry.url}` : ''}
+            initialText={annotations.find((a) => a.entryIdx === notePopup)?.text || ''}
+            onSave={(text) => { addAnnotation(notePopup, text); setNotePopup(null) }}
+            onDelete={() => { removeAnnotation(notePopup); setNotePopup(null) }}
+            onClose={() => setNotePopup(null)}
+          />
+        )
+      })()}
+      {confirmDeleteIdx !== null && (
+        <ConfirmDialog
+          title="Delete pinned entry?"
+          message="This request is pinned. Are you sure you want to delete it?"
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { deleteEntries([confirmDeleteIdx], filteredEntries.map((e) => e._idx)); setConfirmDeleteIdx(null) }}
+          onCancel={() => setConfirmDeleteIdx(null)}
+        />
       )}
     </div>
   )

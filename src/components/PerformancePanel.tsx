@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useHarStore } from '../store/harStore'
 import { formatBytes, formatTime } from '../utils/formatters'
+import { ResizableOverlay } from './ResizableOverlay'
 
 export function PerformancePanel() {
   const allEntries = useHarStore((s) => s.allEntries)
@@ -77,7 +78,7 @@ export function PerformancePanel() {
   }, [allEntries])
 
   return (
-    <div className="overlay-panel">
+    <ResizableOverlay initialWidth={420}>
       <div className="overlay-header">
         <span className="overlay-title">Performance Insights</span>
         <button className="detail-close" onClick={() => setOverlayPanel('none')}>✕</button>
@@ -145,7 +146,7 @@ export function PerformancePanel() {
           <TimingAvg />
         </div>
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }
 

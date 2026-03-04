@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useHarStore } from '../store/harStore'
 import { formatTime, formatBytes, statusClass, timeClass } from '../utils/formatters'
+import { ResizableOverlay } from './ResizableOverlay'
 
 const SLOW_THRESHOLD = 2000
 
@@ -40,7 +41,7 @@ export function IssuesPanel() {
 
   const total = errors.length + slow.length + duplicates.length
   return (
-    <div className="overlay-panel">
+    <ResizableOverlay initialWidth={420}>
       <div className="overlay-header">
         <span className="overlay-title">Issues {total > 0 && <span className="badge issue-badge">{total}</span>}</span>
         <button className="detail-close" onClick={() => setOverlayPanel('none')}>✕</button>
@@ -101,6 +102,6 @@ export function IssuesPanel() {
           ))}
         </div>
       </div>
-    </div>
+    </ResizableOverlay>
   )
 }

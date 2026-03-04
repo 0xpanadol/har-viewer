@@ -90,6 +90,7 @@ interface HarState {
   addAnnotation: (entryIdx: number, text: string) => void
   removeAnnotation: (entryIdx: number) => void
   setCompareData: (data: { log: HarLog; fileName: string } | null) => void
+  deleteEntries: (indices: number[], filteredIndices: number[]) => void
 }
 
 export const useHarStore = create<HarState>()(
@@ -385,6 +386,67 @@ export const useHarStore = create<HarState>()(
         })),
 
       setCompareData: (data) => set({ compareData: data }),
+
+      deleteEntries: (indices, filteredIndices) =>
+        set((state) => {
+          const toDelete = new Set(indices)
+          const newAllEntries = state.allEntries.filter((e) => !toDelete.has(e._idx))
+          // Re-index
+          newAllEntries.forEach((e, i) => { e._idx = i })
+          // Update harData entries
+          const newHarEntries = (state.harData?.entries || []).filter((_, i) => !toDelete.has(i))
+          // Auto-select next entry
+          let newSelectedIdx = -1
+          if (state.selectedIdx >= 0 && toDelete.has(state.selectedIdx)) {
+            // Find next entry in filtered list
+            const curFilteredPos = filteredIndices.indexOf(state.selectedIdx)
+            if (curFilteredPos >= 0) {
+              // Look forward then backward in filtered list for a non-deleted entry
+              for (let i = curFilteredPos + 1; i < filteredIndices.length; i++) {
+                if (!toDelete.has(filteredIndices[i])) {
+                  // Map old index to new index
+                  const oldEntry = state.allEntries[filteredIndices[i]]
+                  const newIdx = newAllEntries.findIndex((e) => e._raw === oldEntry._raw)
+                  if (newIdx >= 0) { newSelectedIdx = newIdx; break }
+                }
+              }
+              if (newSelectedIdx < 0) {
+                for (let i = curFilteredPos - 1; i >= 0; i--) {
+                  if (!toDelete.has(filteredIndices[i])) {
+                    const oldEntry = state.allEntries[filteredIndices[i]]
+                    const newIdx = newAllEntries.findIndex((e) => e._raw === oldEntry._raw)
+                    if (newIdx >= 0) { newSelectedIdx = newIdx; break }
+                  }
+                }
+              }
+            }
+          } else if (state.selectedIdx >= 0) {
+            // Selected entry not deleted, find its new index
+            const oldEntry = state.allEntries[state.selectedIdx]
+            newSelectedIdx = newAllEntries.findIndex((e) => e._raw === oldEntry._raw)
+          }
+          // Clean up checked/pinned
+          const mapOldToNew = new Map<number, number>()
+          state.allEntries.forEach((e) => {
+            if (!toDelete.has(e._idx)) {
+              const newIdx = newAllEntries.findIndex((ne) => ne._raw === e._raw)
+              if (newIdx >= 0) mapOldToNew.set(e._idx, newIdx)
+            }
+          })
+          const newChecked = state.checkedEntries.filter((i) => !toDelete.has(i)).map((i) => mapOldToNew.get(i)!).filter((i) => i !== undefined)
+          const newPinned = state.pinnedEntries.filter((i) => !toDelete.has(i)).map((i) => mapOldToNew.get(i)!).filter((i) => i !== undefined)
+          const newAnnotations = state.annotations.filter((a) => !toDelete.has(a.entryIdx)).map((a) => ({ ...a, entryIdx: mapOldToNew.get(a.entryIdx) ?? a.entryIdx }))
+
+          return {
+            allEntries: newAllEntries,
+            harData: state.harData ? { ...state.harData, entries: newHarEntries } : null,
+            selectedIdx: newSelectedIdx,
+            checkedEntries: newChecked,
+            pinnedEntries: newPinned,
+            annotations: newAnnotations,
+            detailPanelOpen: newSelectedIdx >= 0 ? state.detailPanelOpen : false,
+          }
+        }),
     }),
     {
       name: 'har-viewer-state',
