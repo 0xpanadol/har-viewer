@@ -212,6 +212,7 @@ export function Toolbar({ onOpenFile }: Props) {
           </div>
         </div>
         <div className="toolbar-actions">
+          {/* ── Analysis panels ── */}
           <button
             className={`tool-btn tool-btn-icon ${overlayPanel === 'issues' ? 'active' : ''}`}
             onClick={() => setOverlayPanel(overlayPanel === 'issues' ? 'none' : 'issues')}
@@ -274,7 +275,10 @@ export function Toolbar({ onOpenFile }: Props) {
               <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
             </svg>
           </button>
-          <ColumnToggle />
+
+          <div className="tool-sep" />
+
+          {/* ── Export ── */}
           <button className="tool-btn tool-btn-icon" onClick={handleExport} title="Export HAR">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -295,6 +299,11 @@ export function Toolbar({ onOpenFile }: Props) {
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
+
+          <div className="tool-sep" />
+
+          {/* ── Edit ── */}
+          <ColumnToggle />
           {selectedIdx >= 0 && (
             <button className="tool-btn tool-btn-icon tool-btn-delete" onClick={handleDeleteSelected} title="Delete selected request">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -302,6 +311,10 @@ export function Toolbar({ onOpenFile }: Props) {
               </svg>
             </button>
           )}
+
+          <div className="tool-sep" />
+
+          {/* ── Settings ── */}
           <button
             className={`tool-btn tool-btn-icon ${urlTooltipEnabled ? 'active' : ''}`}
             onClick={() => setUrlTooltipEnabled(!urlTooltipEnabled)}
