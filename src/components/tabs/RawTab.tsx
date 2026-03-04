@@ -1,5 +1,6 @@
 import type { ParsedEntry } from '../../utils/types'
 import { CodeBlock } from '../CodeBlock'
+import { Section } from '../Section'
 import { formatBytes } from '../../utils/formatters'
 import { prettyJson } from '../../utils/parsers'
 
@@ -9,7 +10,6 @@ interface Props {
 
 export function RawTab({ entry }: Props) {
   const raw = entry._raw
-  // Create a copy without the potentially huge response body
   const display = JSON.parse(JSON.stringify(raw))
   if (display.response?.content?.text && display.response.content.text.length > 2000) {
     const totalLen = raw.response.content.text?.length || 0
@@ -19,9 +19,8 @@ export function RawTab({ entry }: Props) {
   }
 
   return (
-    <div className="section">
-      <div className="section-title">Raw HAR Entry</div>
+    <Section title="Raw HAR Entry" defaultOpen>
       <CodeBlock content={prettyJson(display)} />
-    </div>
+    </Section>
   )
 }

@@ -1,6 +1,7 @@
 import type { ParsedEntry } from '../../utils/types'
 import { formatTime } from '../../utils/formatters'
 import { useHarStore } from '../../store/harStore'
+import { Section } from '../Section'
 
 interface Props {
   entry: ParsedEntry
@@ -28,8 +29,7 @@ export function TimingTab({ entry }: Props) {
 
   return (
     <>
-      <div className="section">
-        <div className="section-title">Timing Breakdown</div>
+      <Section title="Timing Breakdown" defaultOpen>
         {PHASES.map((p) => {
           const val = t[p.key]
           if (val === undefined || val < 0) return null
@@ -59,10 +59,9 @@ export function TimingTab({ entry }: Props) {
             {formatTime(total)}
           </div>
         </div>
-      </div>
+      </Section>
 
-      <div className="section">
-        <div className="section-title">Waterfall Legend</div>
+      <Section title="Waterfall Legend" defaultOpen>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {PHASES.map((p) => (
             <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-2)' }}>
@@ -71,10 +70,9 @@ export function TimingTab({ entry }: Props) {
             </div>
           ))}
         </div>
-      </div>
+      </Section>
 
-      <div className="section">
-        <div className="section-title">Timeline</div>
+      <Section title="Timeline" defaultOpen>
         <table className="kv-table">
           <tbody>
             <tr>
@@ -87,7 +85,7 @@ export function TimingTab({ entry }: Props) {
             </tr>
           </tbody>
         </table>
-      </div>
+      </Section>
     </>
   )
 }

@@ -1,6 +1,7 @@
 import type { ParsedEntry } from '../../utils/types'
 import { tryDecodeBase64, tryParseJson, prettyJson } from '../../utils/parsers'
 import { exportCookiesNetscape, exportCookiesJson, buildCookieHeader } from '../../utils/exporters'
+import { Section } from '../Section'
 
 interface Props {
   entry: ParsedEntry
@@ -30,10 +31,7 @@ export function CookiesTab({ entry }: Props) {
       </div>
 
       {reqCookies.length > 0 && (
-        <div className="section">
-          <div className="section-title">
-            Request Cookies <span className="badge">{reqCookies.length}</span>
-          </div>
+        <Section title="Request Cookies" badge={reqCookies.length} defaultOpen>
           <table className="kv-table">
             <tbody>
               {reqCookies.map((c, i) => {
@@ -63,14 +61,11 @@ export function CookiesTab({ entry }: Props) {
               })}
             </tbody>
           </table>
-        </div>
+        </Section>
       )}
 
       {resCookies.length > 0 && (
-        <div className="section">
-          <div className="section-title">
-            Response Cookies (Set-Cookie) <span className="badge">{resCookies.length}</span>
-          </div>
+        <Section title="Response Cookies (Set-Cookie)" badge={resCookies.length} defaultOpen>
           <table className="kv-table">
             <tbody>
               {resCookies.map((c, i) => {
@@ -93,7 +88,7 @@ export function CookiesTab({ entry }: Props) {
               })}
             </tbody>
           </table>
-        </div>
+        </Section>
       )}
     </>
   )

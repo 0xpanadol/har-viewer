@@ -147,6 +147,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 /* Detail content styles */
 .section{margin-bottom:16px}
 .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.section-title.collapsible{cursor:pointer;user-select:none}
+.section-title.collapsible:hover{color:var(--text-1)}
+.section-title .chevron{font-size:8px;transition:transform .15s;color:var(--text-3)}
+.section-title .chevron.open{transform:rotate(90deg)}
 .section-title .badge{background:var(--bg-3);padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;color:var(--text-1)}
 .kv-table{width:100%;border-collapse:collapse}
 .kv-table tr{border-bottom:1px solid var(--bg-3)}

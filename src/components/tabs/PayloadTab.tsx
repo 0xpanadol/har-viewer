@@ -1,6 +1,7 @@
 import type { ParsedEntry } from '../../utils/types'
 import { KvTable } from '../KvTable'
 import { CodeBlock } from '../CodeBlock'
+import { Section } from '../Section'
 import { tryParseJson, prettyJson } from '../../utils/parsers'
 
 interface Props {
@@ -16,27 +17,22 @@ export function PayloadTab({ entry }: Props) {
 
   return (
     <>
-      <div className="section">
-        <div className="section-title">Content Type</div>
+      <Section title="Content Type" defaultOpen>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-1)', padding: '4px 0' }}>
           {pd.mimeType || ''}
         </div>
-      </div>
+      </Section>
 
       {pd.params && pd.params.length > 0 && (
-        <div className="section">
-          <div className="section-title">
-            Form Parameters <span className="badge">{pd.params.length}</span>
-          </div>
+        <Section title="Form Parameters" badge={pd.params.length} defaultOpen>
           <KvTable items={pd.params} decode />
-        </div>
+        </Section>
       )}
 
       {pd.text && (
-        <div className="section">
-          <div className="section-title">Raw Body</div>
+        <Section title="Raw Body" defaultOpen>
           <CodeBlock content={tryParseJson(pd.text) ? prettyJson(tryParseJson(pd.text)) : pd.text} />
-        </div>
+        </Section>
       )}
     </>
   )

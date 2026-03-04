@@ -1,5 +1,6 @@
 import type { ParsedEntry } from '../../utils/types'
 import { KvTable } from '../KvTable'
+import { Section } from '../Section'
 import { formatTime, formatBytes, statusClass } from '../../utils/formatters'
 
 interface Props {
@@ -27,8 +28,7 @@ export function HeadersTab({ entry }: Props) {
 
   return (
     <>
-      <div className="section">
-        <div className="section-title">General</div>
+      <Section title="General" defaultOpen>
         <table className="kv-table">
           <tbody>
             {generalItems.map((item, i) => (
@@ -45,29 +45,20 @@ export function HeadersTab({ entry }: Props) {
             ))}
           </tbody>
         </table>
-      </div>
+      </Section>
 
-      <div className="section">
-        <div className="section-title">
-          Response Headers <span className="badge">{responseHeaders.length}</span>
-        </div>
+      <Section title="Response Headers" badge={responseHeaders.length} defaultOpen>
         <KvTable items={responseHeaders} />
-      </div>
+      </Section>
 
-      <div className="section">
-        <div className="section-title">
-          Request Headers <span className="badge">{requestHeaders.length}</span>
-        </div>
+      <Section title="Request Headers" badge={requestHeaders.length} defaultOpen>
         <KvTable items={requestHeaders} />
-      </div>
+      </Section>
 
       {queryString.length > 0 && (
-        <div className="section">
-          <div className="section-title">
-            Query Parameters <span className="badge">{queryString.length}</span>
-          </div>
+        <Section title="Query Parameters" badge={queryString.length} defaultOpen>
           <KvTable items={queryString} decode />
-        </div>
+        </Section>
       )}
     </>
   )
