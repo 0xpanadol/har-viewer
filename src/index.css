@@ -502,6 +502,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .tool-btn-delete{color:var(--red)}
 .tool-btn-delete:hover{background:var(--red-bg)!important;border-color:var(--red)!important}
 
+/* ─── Save dirty indicator ─── */
+.tool-btn-dirty{color:var(--orange)}
+.tool-btn-dirty .btn-label{color:var(--orange)}
+
 /* ─── Light theme overrides for new components ─── */
 [data-theme="light"] .confirm-backdrop{background:rgba(0,0,0,.3)}
 [data-theme="light"] .confirm-dialog{box-shadow:0 16px 48px rgba(0,0,0,.15)}

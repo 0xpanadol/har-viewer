@@ -93,6 +93,8 @@ interface HarState {
   setCompareData: (data: { log: HarLog; fileName: string } | null) => void
   deleteEntries: (indices: number[], filteredIndices: number[]) => void
   setUrlTooltipEnabled: (v: boolean) => void
+  saveState: () => void
+  isDirty: boolean
 }
 
 export const useHarStore = create<HarState>()(
@@ -130,6 +132,7 @@ export const useHarStore = create<HarState>()(
       annotations: [],
       compareData: null,
       urlTooltipEnabled: true,
+      isDirty: false,
       waterfallStart: 0,
       waterfallEnd: 0,
 
@@ -150,6 +153,7 @@ export const useHarStore = create<HarState>()(
           waterfallStart: wfStart,
           waterfallEnd: wfEnd,
           validationWarnings: warnings,
+          isDirty: false,
         })
         saveToIDB(data)
       },
@@ -170,6 +174,7 @@ export const useHarStore = create<HarState>()(
           waterfallStart: wfStart,
           waterfallEnd: wfEnd,
           validationWarnings: warnings,
+          isDirty: false,
         })
       },
 
@@ -392,6 +397,14 @@ export const useHarStore = create<HarState>()(
 
       setUrlTooltipEnabled: (v) => set({ urlTooltipEnabled: v }),
 
+      saveState: () => {
+        const state = get()
+        if (state.harData) {
+          saveToIDB({ log: state.harData })
+          set({ isDirty: false })
+        }
+      },
+
       deleteEntries: (indices, filteredIndices) =>
         set((state) => {
           const toDelete = new Set(indices)
@@ -450,6 +463,7 @@ export const useHarStore = create<HarState>()(
             pinnedEntries: newPinned,
             annotations: newAnnotations,
             detailPanelOpen: newSelectedIdx >= 0 ? state.detailPanelOpen : false,
+            isDirty: true,
           }
         }),
     }),

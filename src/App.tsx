@@ -36,6 +36,18 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
+  // Ctrl+S to save state
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        useHarStore.getState().saveState()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
   // Restore HAR data from IndexedDB on mount
   useEffect(() => {
     loadFromIDB().then((data) => {
