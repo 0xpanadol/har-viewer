@@ -45,6 +45,8 @@ export function Toolbar({ onOpenFile }: Props) {
   const selectedIdx = useHarStore((s) => s.selectedIdx)
   const pinnedEntries = useHarStore((s) => s.pinnedEntries)
   const deleteEntries = useHarStore((s) => s.deleteEntries)
+  const urlTooltipEnabled = useHarStore((s) => s.urlTooltipEnabled)
+  const setUrlTooltipEnabled = useHarStore((s) => s.setUrlTooltipEnabled)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { methods, statuses, types } = useMemo(() => {
@@ -290,6 +292,15 @@ export function Toolbar({ onOpenFile }: Props) {
               </svg>
             </button>
           )}
+          <button
+            className={`tool-btn tool-btn-icon ${urlTooltipEnabled ? 'active' : ''}`}
+            onClick={() => setUrlTooltipEnabled(!urlTooltipEnabled)}
+            title={urlTooltipEnabled ? 'Disable URL tooltip' : 'Enable URL tooltip'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </button>
           <button
             className="tool-btn tool-btn-icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

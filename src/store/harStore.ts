@@ -44,6 +44,7 @@ interface HarState {
   annotations: Annotation[]
   // Compare data
   compareData: { log: HarLog; fileName: string } | null
+  urlTooltipEnabled: boolean
 
   // Computed
   waterfallStart: number
@@ -91,6 +92,7 @@ interface HarState {
   removeAnnotation: (entryIdx: number) => void
   setCompareData: (data: { log: HarLog; fileName: string } | null) => void
   deleteEntries: (indices: number[], filteredIndices: number[]) => void
+  setUrlTooltipEnabled: (v: boolean) => void
 }
 
 export const useHarStore = create<HarState>()(
@@ -127,6 +129,7 @@ export const useHarStore = create<HarState>()(
       filterPresets: [],
       annotations: [],
       compareData: null,
+      urlTooltipEnabled: true,
       waterfallStart: 0,
       waterfallEnd: 0,
 
@@ -387,6 +390,8 @@ export const useHarStore = create<HarState>()(
 
       setCompareData: (data) => set({ compareData: data }),
 
+      setUrlTooltipEnabled: (v) => set({ urlTooltipEnabled: v }),
+
       deleteEntries: (indices, filteredIndices) =>
         set((state) => {
           const toDelete = new Set(indices)
@@ -476,6 +481,7 @@ export const useHarStore = create<HarState>()(
         maxSize: state.maxSize,
         filterPresets: state.filterPresets,
         annotations: state.annotations,
+        urlTooltipEnabled: state.urlTooltipEnabled,
       }),
     }
   )

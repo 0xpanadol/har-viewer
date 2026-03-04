@@ -46,12 +46,37 @@ export function EntryList() {
   const addAnnotation = useHarStore((s) => s.addAnnotation)
   const removeAnnotation = useHarStore((s) => s.removeAnnotation)
   const deleteEntries = useHarStore((s) => s.deleteEntries)
+  const urlTooltipEnabled = useHarStore((s) => s.urlTooltipEnabled)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
   const [notePopup, setNotePopup] = useState<number | null>(null)
   const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null)
+  const [urlTip, setUrlTip] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
+  const urlTipTimer = useRef<ReturnType<typeof setTimeout>>(null)
+  const urlTipDismissTimer = useRef<ReturnType<typeof setTimeout>>(null)
+  const urlTipHovered = useRef(false)
   const scrollRestoredRef = useRef(false)
+
+  const showUrlTip = useCallback((rect: DOMRect, entry: ParsedEntry) => {
+    if (!urlTooltipEnabled) return
+    if (urlTipDismissTimer.current) clearTimeout(urlTipDismissTimer.current)
+    if (urlTipTimer.current) clearTimeout(urlTipTimer.current)
+    urlTipTimer.current = setTimeout(() => {
+      const tipW = 480
+      const tipH = 100
+      const tx = Math.min(rect.left, window.innerWidth - tipW - 16)
+      const ty = rect.bottom + 6 + tipH > window.innerHeight ? rect.top - tipH - 6 : rect.bottom + 6
+      setUrlTip({ x: tx, y: ty, entry })
+    }, 500)
+  }, [urlTooltipEnabled])
+
+  const dismissUrlTip = useCallback(() => {
+    if (urlTipTimer.current) clearTimeout(urlTipTimer.current)
+    urlTipDismissTimer.current = setTimeout(() => {
+      if (!urlTipHovered.current) setUrlTip(null)
+    }, 150)
+  }, [])
 
   const gridCols = useMemo(() => buildGridCols(visibleColumns), [visibleColumns])
 
@@ -91,6 +116,10 @@ export function EntryList() {
 
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const handleScroll = useCallback(() => {
+    if (urlTipTimer.current) clearTimeout(urlTipTimer.current)
+    if (urlTipDismissTimer.current) clearTimeout(urlTipDismissTimer.current)
+    setUrlTip(null)
+    urlTipHovered.current = false
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
     scrollTimerRef.current = setTimeout(() => {
       if (parentRef.current) setScrollTop(parentRef.current.scrollTop)
@@ -226,7 +255,18 @@ export function EntryList() {
                 </div>
                 {vc.method && <div className={`entry-method ${entry.method}`}>{entry.method}</div>}
                 {vc.url && (
-                  <UrlCell entry={entry} isDuplicate={isDuplicate} parsed={parsed} />
+                  <div
+                    className="entry-url"
+                    onMouseEnter={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                      showUrlTip(rect, entry)
+                    }}
+                    onMouseLeave={dismissUrlTip}
+                  >
+                    {isDuplicate && <span style={{ color: 'var(--orange)', fontSize: 9, marginRight: 2 }} title="Duplicate request">⊘</span>}
+                    <span className="host">{parsed.host}</span>
+                    <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
+                  </div>
                 )}
                 {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>}
                 {vc.type && <div className="entry-type">{entry.contentType}</div>}
@@ -264,6 +304,45 @@ export function EntryList() {
           onCancel={() => setConfirmDeleteIdx(null)}
         />
       )}
+      {urlTip && createPortal(
+        <div
+          onMouseEnter={() => { urlTipHovered.current = true; if (urlTipDismissTimer.current) clearTimeout(urlTipDismissTimer.current) }}
+          onMouseLeave={() => { urlTipHovered.current = false; setUrlTip(null) }}
+        >
+          <UrlTooltip x={urlTip.x} y={urlTip.y} entry={urlTip.entry} />
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+function UrlTooltip({ x, y, entry }: { x: number; y: number; entry: ParsedEntry }) {
+  let queryParams: { key: string; val: string }[] = []
+  try {
+    const u = new URL(entry.url)
+    queryParams = [...u.searchParams.entries()].map(([k, v]) => ({ key: k, val: v }))
+  } catch { /* */ }
+  const parsed = parseUrl(entry.url)
+
+  return (
+    <div className="url-tooltip" style={{ left: x, top: y }}>
+      <div style={{ marginBottom: queryParams.length ? 6 : 0 }}>
+        <span className="url-tooltip-host">{parsed.host}</span>
+        <span className="url-tooltip-path">{parsed.path}</span>
+      </div>
+      {queryParams.length > 0 && (
+        <div className="url-tooltip-query">
+          {queryParams.slice(0, 15).map((p, i) => (
+            <div key={i}><span style={{ color: 'var(--accent)' }}>{decodeURIComponent(p.key)}</span><span style={{ color: 'var(--text-3)' }}> = </span><span style={{ color: 'var(--green)' }}>{decodeURIComponent(p.val).slice(0, 80)}</span></div>
+          ))}
+          {queryParams.length > 15 && <div style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>…and {queryParams.length - 15} more</div>}
+        </div>
+      )}
+      <div className="url-tooltip-actions">
+        <button onClick={() => navigator.clipboard.writeText(entry.url)}>Copy URL</button>
+        {queryParams.length > 0 && <button onClick={() => navigator.clipboard.writeText(queryParams.map((p) => `${decodeURIComponent(p.key)}=${decodeURIComponent(p.val)}`).join('\n'))}>Copy params</button>}
+      </div>
     </div>
   )
 }

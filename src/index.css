@@ -509,8 +509,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 [data-theme="light"] .note-backdrop{background:rgba(0,0,0,.15)}
 
 /* ─── URL Tooltip ─── */
-.url-tooltip{position:fixed;z-index:900;background:var(--bg-2);border:1px solid var(--border-h);border-radius:var(--radius-lg);padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text-0);max-width:500px;word-break:break-all;white-space:pre-wrap;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none;animation:ctxIn .1s ease-out}
+.url-tooltip{position:fixed;z-index:900;background:var(--bg-2);border:1px solid var(--border-h);border-radius:var(--radius-lg);padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text-0);max-width:500px;word-break:break-all;white-space:pre-wrap;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:ctxIn .1s ease-out;user-select:text;cursor:text}
 .url-tooltip-host{color:var(--text-2)}
 .url-tooltip-path{color:var(--accent)}
-.url-tooltip-query{color:var(--green);font-size:10px;margin-top:6px;border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;gap:1px}
+.url-tooltip-query{color:var(--green);font-size:10px;margin-top:6px;border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;gap:1px;max-height:200px;overflow-y:auto}
+.url-tooltip-actions{display:flex;gap:6px;margin-top:8px;border-top:1px solid var(--border);padding-top:6px}
+.url-tooltip-actions button{height:22px;padding:0 8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-1);cursor:pointer;font-family:var(--sans);font-size:10px;transition:all .15s}
+.url-tooltip-actions button:hover{background:var(--bg-4);color:var(--text-0)}
 [data-theme="light"] .url-tooltip{box-shadow:0 8px 24px rgba(0,0,0,.12)}
