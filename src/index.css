@@ -86,10 +86,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .tool-btn svg{width:14px;height:14px;flex-shrink:0;pointer-events:none}
 .tool-btn-icon{padding:0 6px;gap:2px}
 .tool-btn-reset{color:var(--yellow)}
-#search-input{height:30px;flex:1;min-width:100px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:0 52px 0 30px;color:var(--text-0);font-family:var(--mono);font-size:12px;outline:none;transition:border-color .2s}
-#search-input:focus{border-color:var(--accent-dim)}
-.search-wrap{position:relative;flex:1;min-width:0}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-3);pointer-events:none}
 .filter-pills{display:flex;gap:3px;flex-wrap:nowrap;overflow-x:auto}
 .pill{height:24px;padding:0 8px;border-radius:12px;font-size:11px;font-family:var(--mono);border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap;user-select:none}
 .pill:hover{border-color:var(--border-h);color:var(--text-1)}
@@ -114,6 +110,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 #entry-header>div.sorted.asc::after{border-top:none;border-bottom:4px solid var(--accent)}
 
 #entry-scroll{flex:1;overflow-y:auto;overflow-x:hidden;position:relative}
+
+/* Entry list search bar */
+.entry-search-bar{display:flex;align-items:center;gap:0;padding:0;background:var(--bg-1);border-top:1px solid var(--border);flex-shrink:0;position:relative;height:36px}
+.entry-search-icon{width:14px;height:14px;color:var(--text-3);flex-shrink:0;position:absolute;left:10px;pointer-events:none;z-index:1}
+.entry-search-bar input{flex:1;height:100%;background:transparent;border:none;padding:0 130px 0 32px;color:var(--text-0);font-family:var(--mono);font-size:12px;outline:none;transition:background .15s}
+.entry-search-bar input:focus{background:var(--bg-2);border-radius:0}
+.entry-search-bar input:focus-visible{outline:none;border-radius:0}
+.entry-search-bar input::placeholder{color:var(--text-3)}
+.entry-search-toggles{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center}
 #entry-container{position:relative}
 .entry-row{display:grid;grid-template-columns:28px 36px 60px minmax(100px,1fr) 120px 80px 80px 80px 1fr;height:var(--row-h);align-items:center;padding:0 8px;gap:4px;border-bottom:1px solid var(--bg-2);cursor:pointer;transition:background .1s;font-size:12px;user-select:none}
 .entry-row:hover{background:var(--bg-2)}
@@ -248,10 +253,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
   .btn-label{display:none}
   .tool-btn{padding:0 6px;height:28px;font-size:11px}
   .tool-btn-icon{padding:0 5px}
-  #search-input{font-size:11px;height:28px;min-width:80px;padding-right:48px;padding-left:26px}
-  .search-wrap{flex:0 1 140px;min-width:80px}
-  .search-wrap svg{width:11px;height:11px;left:8px}
   .search-toggle{width:18px;height:18px;font-size:8px}
+  .search-scope-select{font-size:9px;height:18px;padding:0 3px}
   .pill{height:20px;padding:0 6px;font-size:10px}
   .pill .count{display:none}
   .stat-chip{font-size:9px}
@@ -380,8 +383,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 
 /* ─── Search toggles ─── */
 .search-toggles{display:flex;gap:2px;position:absolute;right:4px;top:50%;transform:translateY(-50%)}
-.search-toggle{width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;color:var(--text-3);cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;transition:all .15s;padding:0}
-.search-toggle:hover{color:var(--text-1);background:var(--bg-3)}
+.search-toggle{width:24px;height:22px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:11px;color:var(--text-3);cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;transition:all .15s;padding:0}
+.search-toggle:hover{color:var(--text-1);background:var(--bg-3);border-color:var(--border)}
 .search-toggle.active{color:var(--accent);background:var(--accent-bg);border-color:var(--accent-dim)}
 
 /* ─── Domain filter dropdown ─── */
@@ -563,9 +566,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .tab-match-info{font-family:var(--mono);font-size:10px;color:var(--text-2);padding:4px 8px;background:var(--bg-2);border-radius:var(--radius);margin-bottom:8px}
 
 /* ─── Search Scope Select ─── */
-.search-scope-select{height:22px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-1);font-family:var(--mono);font-size:10px;padding:0 4px;cursor:pointer;outline:none;transition:all .15s}
-.search-scope-select:hover{border-color:var(--accent-dim);color:var(--text-0)}
-.search-scope-select:focus{border-color:var(--accent)}
+.search-scope-select{height:22px;background:var(--bg-3);border:none;border-radius:11px;color:var(--text-2);font-family:var(--mono);font-size:10px;padding:0 6px;cursor:pointer;outline:none;transition:all .15s}
+.search-scope-select:hover{background:var(--bg-4);color:var(--text-1)}
+.search-scope-select:focus{background:var(--bg-4);color:var(--text-0)}
+.search-scope-select:focus-visible{outline:none}
 
 /* ─── Transfer Size ─── */
 .transfer-size{color:var(--text-3);font-size:10px;margin-left:2px}

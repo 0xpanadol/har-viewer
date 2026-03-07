@@ -8,7 +8,7 @@ import { parseUrl } from '../utils/parsers'
 import { ContextMenu } from './ContextMenu'
 import { NoteEditor } from './NoteEditor'
 import { ConfirmDialog } from './ConfirmDialog'
-import type { ParsedEntry, SortColumn, VisibleColumns } from '../utils/types'
+import type { ParsedEntry, SortColumn, VisibleColumns, SearchScope } from '../utils/types'
 
 const ROW_H = 32
 
@@ -47,6 +47,14 @@ export function EntryList() {
   const removeAnnotation = useHarStore((s) => s.removeAnnotation)
   const deleteEntries = useHarStore((s) => s.deleteEntries)
   const urlTooltipEnabled = useHarStore((s) => s.urlTooltipEnabled)
+  const searchQuery = useHarStore((s) => s.searchQuery)
+  const setSearchQuery = useHarStore((s) => s.setSearchQuery)
+  const useRegex = useHarStore((s) => s.useRegex)
+  const setUseRegex = useHarStore((s) => s.setUseRegex)
+  const negateSearch = useHarStore((s) => s.negateSearch)
+  const setNegateSearch = useHarStore((s) => s.setNegateSearch)
+  const searchScope = useHarStore((s) => s.searchScope)
+  const setSearchScope = useHarStore((s) => s.setSearchScope)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const lastCheckedRef = useRef<number>(-1)
@@ -299,6 +307,32 @@ export function EntryList() {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      <div className="entry-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="entry-search-icon">
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" id="search-input"
+          placeholder={useRegex ? 'Regex filter...' : 'Filter URL, method, status...'}
+          value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Search and filter requests" />
+        <div className="entry-search-toggles">
+          <button className={`search-toggle ${useRegex ? 'active' : ''}`} onClick={() => setUseRegex(!useRegex)} title="Use regex">.*</button>
+          <button className={`search-toggle ${negateSearch ? 'active' : ''}`} onClick={() => setNegateSearch(!negateSearch)} title="Negate / exclude matches">!</button>
+          <select
+            className="search-scope-select"
+            value={searchScope}
+            onChange={(e) => setSearchScope(e.target.value as SearchScope)}
+            title="Search scope"
+            aria-label="Search scope"
+          >
+            <option value="url">URL</option>
+            <option value="headers">Headers</option>
+            <option value="body">Body</option>
+            <option value="all">All</option>
+          </select>
         </div>
       </div>
 

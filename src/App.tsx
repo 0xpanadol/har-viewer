@@ -33,6 +33,7 @@ export default function App() {
   const { loading, progress, loadText, loadFile } = useFileLoader()
   const [restoring, setRestoring] = useState(true)
 
+
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)

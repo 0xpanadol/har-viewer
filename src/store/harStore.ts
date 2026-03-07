@@ -46,7 +46,7 @@ interface HarState {
   compareData: { log: HarLog; fileName: string } | null
   urlTooltipEnabled: boolean
   searchScope: SearchScope
-  undoStack: Array<{ allEntries: ParsedEntry[]; harData: HarLog | null; checkedEntries: number[]; pinnedEntries: number[]; annotations: Annotation[]; selectedIdx: number }>
+  undoStack: Array<{ allEntries: ParsedEntry[]; harData: HarLog | null; checkedEntries: number[]; pinnedEntries: number[]; annotations: Annotation[]; selectedIdx: number; isDirty: boolean }>
 
   // Computed
   waterfallStart: number
@@ -417,7 +417,7 @@ export const useHarStore = create<HarState>()(
             annotations: snapshot.annotations,
             selectedIdx: snapshot.selectedIdx,
             undoStack: state.undoStack.slice(0, -1),
-            isDirty: true,
+            isDirty: snapshot.isDirty,
           }
         }),
 
@@ -439,6 +439,7 @@ export const useHarStore = create<HarState>()(
             pinnedEntries: [...state.pinnedEntries],
             annotations: [...state.annotations],
             selectedIdx: state.selectedIdx,
+            isDirty: state.isDirty,
           }
           const newUndoStack = [...state.undoStack.slice(-19), snapshot]
 

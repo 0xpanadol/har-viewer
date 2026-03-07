@@ -10,7 +10,7 @@ import { ValidationBadge } from './ValidationBadge'
 import { ConfirmDialog } from './ConfirmDialog'
 import { formatBytes, formatTime } from '../utils/formatters'
 import { exportHarEntries, exportCsv, exportSanitizedHar, mergeHarLogs, exportPostmanCollection } from '../utils/exporters'
-import type { HarLog, SearchScope } from '../utils/types'
+import type { HarLog } from '../utils/types'
 
 interface Props {
   onOpenFile: () => void
@@ -51,11 +51,6 @@ function DropItem({ label, icon, onClick, active }: { label: string; icon?: Reac
 export function Toolbar({ onOpenFile }: Props) {
   const allEntries = useHarStore((s) => s.allEntries)
   const searchQuery = useHarStore((s) => s.searchQuery)
-  const setSearchQuery = useHarStore((s) => s.setSearchQuery)
-  const useRegex = useHarStore((s) => s.useRegex)
-  const setUseRegex = useHarStore((s) => s.setUseRegex)
-  const negateSearch = useHarStore((s) => s.negateSearch)
-  const setNegateSearch = useHarStore((s) => s.setNegateSearch)
   const activeMethodFilters = useHarStore((s) => s.activeMethodFilters)
   const activeStatusFilters = useHarStore((s) => s.activeStatusFilters)
   const activeTypeFilters = useHarStore((s) => s.activeTypeFilters)
@@ -81,8 +76,6 @@ export function Toolbar({ onOpenFile }: Props) {
   const setUrlTooltipEnabled = useHarStore((s) => s.setUrlTooltipEnabled)
   const isDirty = useHarStore((s) => s.isDirty)
   const saveState = useHarStore((s) => s.saveState)
-  const searchScope = useHarStore((s) => s.searchScope)
-  const setSearchScope = useHarStore((s) => s.setSearchScope)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { methods, statuses, types } = useMemo(() => {
@@ -209,33 +202,6 @@ export function Toolbar({ onOpenFile }: Props) {
           </svg>
           <span className="btn-label">Save{isDirty ? ' •' : ''}</span>
         </button>
-
-        {/* Search */}
-        <div className="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input type="text" id="search-input"
-            placeholder={useRegex ? 'Regex filter...' : 'Filter URL, method, status...'}
-            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search and filter requests" />
-          <div className="search-toggles">
-            <button className={`search-toggle ${useRegex ? 'active' : ''}`} onClick={() => setUseRegex(!useRegex)} title="Use regex">.*</button>
-            <button className={`search-toggle ${negateSearch ? 'active' : ''}`} onClick={() => setNegateSearch(!negateSearch)} title="Negate / exclude matches">!</button>
-            <select
-              className="search-scope-select"
-              value={searchScope}
-              onChange={(e) => setSearchScope(e.target.value as SearchScope)}
-              title="Search scope"
-              aria-label="Search scope"
-            >
-              <option value="url">URL</option>
-              <option value="headers">Headers</option>
-              <option value="body">Body</option>
-              <option value="all">All</option>
-            </select>
-          </div>
-        </div>
 
         <div className="toolbar-actions">
           {/* Analyze dropdown */}
