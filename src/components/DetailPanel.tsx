@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useHarStore } from '../store/harStore'
 import type { DetailTab } from '../utils/types'
 import { HeadersTab } from './tabs/HeadersTab'
@@ -24,17 +25,36 @@ export function DetailPanel() {
   const activeDetailTab = useHarStore((s) => s.activeDetailTab)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
   const setActiveDetailTab = useHarStore((s) => s.setActiveDetailTab)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const entry = allEntries.find((e) => e._idx === selectedIdx)
+
+  // Focus search on Ctrl+F when detail panel is open
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && detailPanelOpen && entry) {
+        e.preventDefault()
+        e.stopPropagation()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+    }
+    // Use capture phase to intercept before EntryList's handler
+    document.addEventListener('keydown', handler, true)
+    return () => document.removeEventListener('keydown', handler, true)
+  }, [detailPanelOpen, entry])
+
+  const clearSearch = useCallback(() => setSearchQuery(''), [])
 
   if (!detailPanelOpen || !entry) return null
 
   const renderTab = () => {
     switch (activeDetailTab) {
-      case 'headers': return <HeadersTab entry={entry} />
-      case 'payload': return <PayloadTab entry={entry} />
-      case 'response': return <ResponseTab entry={entry} />
-      case 'cookies': return <CookiesTab entry={entry} />
+      case 'headers': return <HeadersTab entry={entry} searchQuery={searchQuery} />
+      case 'payload': return <PayloadTab entry={entry} searchQuery={searchQuery} />
+      case 'response': return <ResponseTab entry={entry} externalSearch={searchQuery} />
+      case 'cookies': return <CookiesTab entry={entry} searchQuery={searchQuery} />
       case 'timing': return <TimingTab entry={entry} />
       case 'raw': return <RawTab entry={entry} />
     }
@@ -56,6 +76,23 @@ export function DetailPanel() {
             {t.label}
           </button>
         ))}
+      </div>
+      <div className="detail-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="detail-search-icon">
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          ref={searchRef}
+          id="detail-search-input"
+          className="detail-search-input"
+          type="text"
+          placeholder="Search in headers, payload, response, cookies... (Ctrl+F)"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button className="detail-search-clear" onClick={clearSearch} title="Clear search">✕</button>
+        )}
       </div>
       <div className="detail-body">
         {renderTab()}

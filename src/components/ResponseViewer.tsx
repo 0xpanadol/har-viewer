@@ -6,9 +6,10 @@ interface Props {
   language: 'json' | 'html' | 'xml' | 'text'
   rawBytes?: number
   mimeType?: string
+  externalSearch?: string
 }
 
-export function ResponseViewer({ content, language, rawBytes, mimeType }: Props) {
+export function ResponseViewer({ content, language, rawBytes, mimeType, externalSearch }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchIdx, setSearchIdx] = useState(0)
   const [wordWrap, setWordWrap] = useState(true)
@@ -17,6 +18,14 @@ export function ResponseViewer({ content, language, rawBytes, mimeType }: Props)
   const [jsonPath, setJsonPath] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync external search query from DetailPanel
+  useEffect(() => {
+    if (externalSearch !== undefined && externalSearch.length >= 2 && externalSearch !== searchQuery) {
+      setSearchQuery(externalSearch)
+      setSearchIdx(0)
+    }
+  }, [externalSearch])
 
   // Search matches
   const matches = useMemo(() => {

@@ -5,6 +5,7 @@ import { tryDecodeBase64 } from '../../utils/parsers'
 
 interface Props {
   entry: ParsedEntry
+  externalSearch?: string
 }
 
 function detectLanguage(mimeType: string): 'json' | 'html' | 'xml' | 'text' {
@@ -14,7 +15,7 @@ function detectLanguage(mimeType: string): 'json' | 'html' | 'xml' | 'text' {
   return 'text'
 }
 
-export function ResponseTab({ entry }: Props) {
+export function ResponseTab({ entry, externalSearch }: Props) {
   const content = entry._raw.response?.content
 
   if (!content || (!content.text && !content.encoding)) {
@@ -84,6 +85,7 @@ export function ResponseTab({ entry }: Props) {
           language={language}
           rawBytes={content.size || 0}
           mimeType={content.mimeType}
+          externalSearch={externalSearch}
         />
       )}
     </div>

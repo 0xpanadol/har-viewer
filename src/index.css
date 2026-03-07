@@ -546,3 +546,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .url-tooltip-actions button:hover{background:var(--bg-4);color:var(--text-0)}
 .url-tooltip-actions button:active{transform:scale(.95)}
 [data-theme="light"] .url-tooltip{box-shadow:0 8px 24px rgba(0,0,0,.12)}
+
+/* ─── Detail Panel Search Bar ─── */
+.detail-search-bar{display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg-2);border-bottom:1px solid var(--border);flex-shrink:0;position:relative}
+.detail-search-icon{width:13px;height:13px;color:var(--text-3);flex-shrink:0}
+.detail-search-input{flex:1;height:26px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:0 28px 0 8px;color:var(--text-0);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .2s}
+.detail-search-input:focus{border-color:var(--accent-dim)}
+.detail-search-input::placeholder{color:var(--text-3)}
+.detail-search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-3);cursor:pointer;font-size:11px;border-radius:3px;transition:all .15s;padding:0}
+.detail-search-clear:hover{background:var(--bg-3);color:var(--text-0)}
+
+/* ─── Search highlight in tabs ─── */
+.search-hl{background:rgba(251,191,36,.25);color:var(--yellow);border-radius:2px;padding:0 1px}
+
+/* ─── Tab match info ─── */
+.tab-match-info{font-family:var(--mono);font-size:10px;color:var(--text-2);padding:4px 8px;background:var(--bg-2);border-radius:var(--radius);margin-bottom:8px}

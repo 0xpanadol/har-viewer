@@ -1,13 +1,15 @@
 import { useCallback, useRef } from 'react'
 import { formatBytes } from '../utils/formatters'
+import { highlightText } from '../utils/highlight'
 
 const MAX_DISPLAY = 500000
 
 interface Props {
   content: string
+  searchQuery?: string
 }
 
-export function CodeBlock({ content }: Props) {
+export function CodeBlock({ content, searchQuery = '' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const truncated = content.length > MAX_DISPLAY
   const display = truncated ? content.slice(0, MAX_DISPLAY) : content
@@ -25,7 +27,7 @@ export function CodeBlock({ content }: Props) {
   return (
     <div className="code-block" ref={ref}>
       <button className="copy-btn" onClick={handleCopy}>Copy</button>
-      {display}
+      {highlightText(display, searchQuery)}
       {truncated && `\n\n... [truncated — ${formatBytes(content.length)} total]`}
     </div>
   )

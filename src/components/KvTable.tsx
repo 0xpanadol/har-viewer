@@ -1,4 +1,5 @@
 import { tryDecodeBase64, tryParseJson, prettyJson } from '../utils/parsers'
+import { highlightText } from '../utils/highlight'
 
 interface KvItem {
   name?: string
@@ -9,9 +10,10 @@ interface KvItem {
 interface Props {
   items: KvItem[]
   decode?: boolean
+  searchQuery?: string
 }
 
-export function KvTable({ items, decode }: Props) {
+export function KvTable({ items, decode, searchQuery = '' }: Props) {
   if (!items || !items.length) {
     return <div style={{ color: 'var(--text-3)', fontSize: 12, padding: 8 }}>No data</div>
   }
@@ -34,17 +36,17 @@ export function KvTable({ items, decode }: Props) {
               const b = tryDecodeBase64(val)
               if (b && /^[\x20-\x7E\r\n\t]+$/.test(b.slice(0, 100))) {
                 const j = tryParseJson(b)
-                decoded = `↳ base64: ${j ? prettyJson(j).slice(0, 300) : b.slice(0, 300)}`
+                decoded = `↳ base64: ${j ? JSON.stringify(j) : b}`
               }
             }
           }
 
           return (
             <tr key={`${key}-${i}`}>
-              <td className="kv-key" title={key}>{key}</td>
+              <td className="kv-key" title={key}>{highlightText(key, searchQuery)}</td>
               <td className="kv-val">
-                {val}
-                {decoded && <span className="decoded">{decoded}</span>}
+                {highlightText(val, searchQuery)}
+                {decoded && <span className="decoded">{highlightText(decoded, searchQuery)}</span>}
               </td>
             </tr>
           )

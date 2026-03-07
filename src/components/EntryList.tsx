@@ -158,6 +158,8 @@ export function EntryList() {
         useHarStore.getState().setSelectedIdx(-1)
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        // If detail panel is open, let DetailPanel's capture-phase handler take it
+        if (useHarStore.getState().detailPanelOpen) return
         e.preventDefault()
         document.getElementById('search-input')?.focus()
       }
