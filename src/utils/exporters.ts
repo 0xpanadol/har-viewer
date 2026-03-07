@@ -368,3 +368,54 @@ export function mergeHarLogs(logs: { log: HarLog; fileName: string }[]): HarLog 
     entries: allEntries,
   }
 }
+
+/** Export as Postman Collection v2.1 */
+export function exportPostmanCollection(entries: HarEntry[], label: string): void {
+  const items = entries.map((e) => {
+    const url = e.request?.url || ''
+    const method = e.request?.method || 'GET'
+    let parsedUrl: URL | null = null
+    try { parsedUrl = new URL(url) } catch { /* */ }
+
+    const headers = (e.request?.headers || [])
+      .filter((h) => !['host', 'content-length', 'connection'].includes(h.name.toLowerCase()))
+      .map((h) => ({ key: h.name, value: h.value }))
+
+    const item: Record<string, unknown> = {
+      name: `${method} ${parsedUrl?.pathname || url}`,
+      request: {
+        method,
+        header: headers,
+        url: {
+          raw: url,
+          protocol: parsedUrl?.protocol?.replace(':', '') || 'https',
+          host: parsedUrl?.hostname?.split('.') || [],
+          port: parsedUrl?.port || '',
+          path: parsedUrl?.pathname?.split('/').filter(Boolean) || [],
+          query: [...(parsedUrl?.searchParams.entries() || [])].map(([k, v]) => ({ key: k, value: v })),
+        },
+      },
+    }
+
+    if (e.request?.postData?.text) {
+      const ct = (e.request.headers || []).find((h) => h.name.toLowerCase() === 'content-type')?.value || ''
+      const body: Record<string, unknown> = { mode: 'raw', raw: e.request.postData.text }
+      if (ct.includes('json')) body.options = { raw: { language: 'json' } }
+      else if (ct.includes('xml')) body.options = { raw: { language: 'xml' } }
+        ; (item.request as Record<string, unknown>).body = body
+    }
+
+    return item
+  })
+
+  const collection = {
+    info: {
+      name: `HAR Export - ${label}`,
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
+    },
+    item: items,
+  }
+
+  const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/json' })
+  downloadBlob(blob, `postman-collection-${entries.length}-${label}.json`)
+}

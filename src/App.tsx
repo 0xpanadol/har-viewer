@@ -20,6 +20,8 @@ import { PerformancePanel } from './components/PerformancePanel'
 import { GroupingPanel } from './components/GroupingPanel'
 import { TimelinePanel } from './components/TimelinePanel'
 import { ComparePanel } from './components/ComparePanel'
+import { InitiatorPanel } from './components/InitiatorPanel'
+import { ShortcutsPanel } from './components/ShortcutsPanel'
 
 export default function App() {
   const allEntries = useHarStore((s) => s.allEntries)
@@ -36,12 +38,23 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  // Ctrl+S to save state
+  // Ctrl+S to save state, Ctrl+Z to undo, ? for shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
         useHarStore.getState().saveState()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+        e.preventDefault()
+        useHarStore.getState().undoDelete()
+      }
+      if (e.key === '?' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        const store = useHarStore.getState()
+        if (store.allEntries.length > 0) {
+          store.setOverlayPanel(store.overlayPanel === 'shortcuts' ? 'none' : 'shortcuts')
+        }
       }
     }
     document.addEventListener('keydown', handler)
@@ -168,6 +181,8 @@ export default function App() {
                 {overlayPanel === 'grouping' && <GroupingPanel />}
                 {overlayPanel === 'timeline' && <TimelinePanel />}
                 {overlayPanel === 'compare' && <ComparePanel />}
+                {overlayPanel === 'initiator' && <InitiatorPanel />}
+                {(overlayPanel) === 'shortcuts' && <ShortcutsPanel />}
               </>
             </ErrorBoundary>
           </div>

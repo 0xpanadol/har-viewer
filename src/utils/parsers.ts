@@ -38,6 +38,20 @@ export function getEntrySize(e: HarEntry): number {
   return -1
 }
 
+export function getTransferSize(e: HarEntry): number {
+  const bs = e.response?.bodySize
+  if (bs && bs > 0) return bs
+  return -1
+}
+
+export function getInitiator(e: HarEntry): string {
+  const init = (e as HarEntry)._initiator
+  if (init?.url) return init.url
+  // Fallback: check Referer header
+  const referer = (e.request?.headers || []).find((h) => h.name.toLowerCase() === 'referer')
+  return referer?.value || ''
+}
+
 export function parseHarEntries(entries: HarEntry[]): ParsedEntry[] {
   return entries.map((e, i) => {
     const parsed = parseUrl(e.request?.url || '')
@@ -52,9 +66,11 @@ export function parseHarEntries(entries: HarEntry[]): ParsedEntry[] {
       statusText: e.response?.statusText || '',
       contentType: getContentType(e),
       size: getEntrySize(e),
+      transferSize: getTransferSize(e),
       time: e.time || 0,
       startTime: new Date(e.startedDateTime).getTime() || 0,
       timings: e.timings || { blocked: -1, dns: -1, connect: -1, ssl: -1, send: 0, wait: 0, receive: 0 },
+      initiator: getInitiator(e),
     }
   })
 }

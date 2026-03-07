@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab, VisibleColumns, OverlayPanel, Theme, FilterPreset, ValidationWarning, Annotation } from '../utils/types'
+import type { HarLog, ParsedEntry, SortColumn, SortDirection, DetailTab, VisibleColumns, OverlayPanel, Theme, FilterPreset, ValidationWarning, Annotation, SearchScope } from '../utils/types'
 import { DEFAULT_VISIBLE_COLUMNS } from '../utils/types'
 import { parseHarEntries, validateHar } from '../utils/parsers'
 import { saveHarData as saveToIDB, clearHarData as clearFromIDB } from '../utils/storage'
@@ -45,6 +45,8 @@ interface HarState {
   // Compare data
   compareData: { log: HarLog; fileName: string } | null
   urlTooltipEnabled: boolean
+  searchScope: SearchScope
+  undoStack: Array<{ allEntries: ParsedEntry[]; harData: HarLog | null; checkedEntries: number[]; pinnedEntries: number[]; annotations: Annotation[]; selectedIdx: number }>
 
   // Computed
   waterfallStart: number
@@ -93,6 +95,8 @@ interface HarState {
   setCompareData: (data: { log: HarLog; fileName: string } | null) => void
   deleteEntries: (indices: number[], filteredIndices: number[]) => void
   setUrlTooltipEnabled: (v: boolean) => void
+  setSearchScope: (scope: SearchScope) => void
+  undoDelete: () => void
   saveState: () => void
   isDirty: boolean
 }
@@ -132,6 +136,8 @@ export const useHarStore = create<HarState>()(
       annotations: [],
       compareData: null,
       urlTooltipEnabled: true,
+      searchScope: 'url' as const,
+      undoStack: [],
       isDirty: false,
       waterfallStart: 0,
       waterfallEnd: 0,
@@ -397,6 +403,24 @@ export const useHarStore = create<HarState>()(
 
       setUrlTooltipEnabled: (v) => set({ urlTooltipEnabled: v }),
 
+      setSearchScope: (scope) => set({ searchScope: scope }),
+
+      undoDelete: () =>
+        set((state) => {
+          if (state.undoStack.length === 0) return {}
+          const snapshot = state.undoStack[state.undoStack.length - 1]
+          return {
+            allEntries: snapshot.allEntries,
+            harData: snapshot.harData,
+            checkedEntries: snapshot.checkedEntries,
+            pinnedEntries: snapshot.pinnedEntries,
+            annotations: snapshot.annotations,
+            selectedIdx: snapshot.selectedIdx,
+            undoStack: state.undoStack.slice(0, -1),
+            isDirty: true,
+          }
+        }),
+
       saveState: () => {
         const state = get()
         if (state.harData) {
@@ -407,6 +431,17 @@ export const useHarStore = create<HarState>()(
 
       deleteEntries: (indices, filteredIndices) =>
         set((state) => {
+          // Save undo snapshot (max 20)
+          const snapshot = {
+            allEntries: [...state.allEntries],
+            harData: state.harData ? { ...state.harData, entries: [...(state.harData.entries || [])] } : null,
+            checkedEntries: [...state.checkedEntries],
+            pinnedEntries: [...state.pinnedEntries],
+            annotations: [...state.annotations],
+            selectedIdx: state.selectedIdx,
+          }
+          const newUndoStack = [...state.undoStack.slice(-19), snapshot]
+
           const toDelete = new Set(indices)
           const newAllEntries = state.allEntries.filter((e) => !toDelete.has(e._idx))
           // Re-index
@@ -463,6 +498,7 @@ export const useHarStore = create<HarState>()(
             pinnedEntries: newPinned,
             annotations: newAnnotations,
             detailPanelOpen: newSelectedIdx >= 0 ? state.detailPanelOpen : false,
+            undoStack: newUndoStack,
             isDirty: true,
           }
         }),
@@ -496,6 +532,7 @@ export const useHarStore = create<HarState>()(
         filterPresets: state.filterPresets,
         annotations: state.annotations,
         urlTooltipEnabled: state.urlTooltipEnabled,
+        searchScope: state.searchScope,
       }),
     }
   )

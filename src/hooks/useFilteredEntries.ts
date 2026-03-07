@@ -18,6 +18,7 @@ export function useFilteredEntries(): ParsedEntry[] {
   const maxTime = useHarStore((s) => s.maxTime)
   const minSize = useHarStore((s) => s.minSize)
   const maxSize = useHarStore((s) => s.maxSize)
+  const searchScope = useHarStore((s) => s.searchScope)
 
   return useMemo(() => {
     let regex: RegExp | null = null
@@ -47,7 +48,21 @@ export function useFilteredEntries(): ParsedEntry[] {
       if (maxSize !== null && e.size > maxSize) return false
 
       if (searchQuery) {
-        const haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType}`
+        let haystack: string
+        if (searchScope === 'url') {
+          haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType}`
+        } else if (searchScope === 'headers') {
+          const reqHeaders = (e._raw.request?.headers || []).map((h) => `${h.name}: ${h.value}`).join(' ')
+          const resHeaders = (e._raw.response?.headers || []).map((h) => `${h.name}: ${h.value}`).join(' ')
+          haystack = `${reqHeaders} ${resHeaders}`
+        } else if (searchScope === 'body') {
+          haystack = `${e._raw.request?.postData?.text || ''} ${e._raw.response?.content?.text || ''}`
+        } else {
+          // 'all'
+          const reqHeaders = (e._raw.request?.headers || []).map((h) => `${h.name}: ${h.value}`).join(' ')
+          const resHeaders = (e._raw.response?.headers || []).map((h) => `${h.name}: ${h.value}`).join(' ')
+          haystack = `${e.method} ${e.url} ${e.status} ${e.statusText} ${e.contentType} ${reqHeaders} ${resHeaders} ${e._raw.request?.postData?.text || ''} ${e._raw.response?.content?.text || ''}`
+        }
         let matches: boolean
         if (regex) {
           matches = regex.test(haystack)
@@ -83,5 +98,5 @@ export function useFilteredEntries(): ParsedEntry[] {
     }
 
     return result
-  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir, minTime, maxTime, minSize, maxSize])
+  }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir, minTime, maxTime, minSize, maxSize, searchScope])
 }

@@ -9,8 +9,8 @@ import { FilterPresets } from './FilterPresets'
 import { ValidationBadge } from './ValidationBadge'
 import { ConfirmDialog } from './ConfirmDialog'
 import { formatBytes, formatTime } from '../utils/formatters'
-import { exportHarEntries, exportCsv, exportSanitizedHar, mergeHarLogs } from '../utils/exporters'
-import type { HarLog } from '../utils/types'
+import { exportHarEntries, exportCsv, exportSanitizedHar, mergeHarLogs, exportPostmanCollection } from '../utils/exporters'
+import type { HarLog, SearchScope } from '../utils/types'
 
 interface Props {
   onOpenFile: () => void
@@ -81,6 +81,8 @@ export function Toolbar({ onOpenFile }: Props) {
   const setUrlTooltipEnabled = useHarStore((s) => s.setUrlTooltipEnabled)
   const isDirty = useHarStore((s) => s.isDirty)
   const saveState = useHarStore((s) => s.saveState)
+  const searchScope = useHarStore((s) => s.searchScope)
+  const setSearchScope = useHarStore((s) => s.setSearchScope)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { methods, statuses, types } = useMemo(() => {
@@ -146,6 +148,13 @@ export function Toolbar({ onOpenFile }: Props) {
     exportSanitizedHar(entries, 'sanitized', harData)
   }
 
+  const handleExportPostman = () => {
+    const entries = checkedEntries.length > 0
+      ? allEntries.filter((e) => checkedEntries.includes(e._idx)).map((e) => e._raw)
+      : filteredEntries.map((e) => e._raw)
+    exportPostmanCollection(entries, 'collection')
+  }
+
   const handleDeleteSelected = () => {
     if (selectedIdx < 0) return
     if (pinnedEntries.includes(selectedIdx)) setConfirmDelete(true)
@@ -208,10 +217,23 @@ export function Toolbar({ onOpenFile }: Props) {
           </svg>
           <input type="text" id="search-input"
             placeholder={useRegex ? 'Regex filter...' : 'Filter URL, method, status...'}
-            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search and filter requests" />
           <div className="search-toggles">
             <button className={`search-toggle ${useRegex ? 'active' : ''}`} onClick={() => setUseRegex(!useRegex)} title="Use regex">.*</button>
             <button className={`search-toggle ${negateSearch ? 'active' : ''}`} onClick={() => setNegateSearch(!negateSearch)} title="Negate / exclude matches">!</button>
+            <select
+              className="search-scope-select"
+              value={searchScope}
+              onChange={(e) => setSearchScope(e.target.value as SearchScope)}
+              title="Search scope"
+              aria-label="Search scope"
+            >
+              <option value="url">URL</option>
+              <option value="headers">Headers</option>
+              <option value="body">Body</option>
+              <option value="all">All</option>
+            </select>
           </div>
         </div>
 
@@ -223,6 +245,7 @@ export function Toolbar({ onOpenFile }: Props) {
             <DropItem label="Performance" active={overlayPanel === 'perf'} onClick={() => setOverlayPanel(overlayPanel === 'perf' ? 'none' : 'perf')} />
             <DropItem label="Grouping" active={overlayPanel === 'grouping'} onClick={() => setOverlayPanel(overlayPanel === 'grouping' ? 'none' : 'grouping')} />
             <DropItem label="Timeline" active={overlayPanel === 'timeline'} onClick={() => setOverlayPanel(overlayPanel === 'timeline' ? 'none' : 'timeline')} />
+            <DropItem label="Initiator" active={overlayPanel === 'initiator'} onClick={() => setOverlayPanel(overlayPanel === 'initiator' ? 'none' : 'initiator')} />
             <DropItem label="Compare" active={overlayPanel === 'compare'} onClick={() => setOverlayPanel(overlayPanel === 'compare' ? 'none' : 'compare')} />
           </DropMenu>
 
@@ -231,6 +254,7 @@ export function Toolbar({ onOpenFile }: Props) {
             <DropItem label="Export HAR" onClick={handleExport} />
             <DropItem label="Export CSV" onClick={handleExportCsv} />
             <DropItem label="Export Sanitized" onClick={handleExportSanitized} />
+            <DropItem label="Export Postman" onClick={handleExportPostman} />
             <DropItem label="Merge HAR" onClick={() => mergeRef.current?.click()} />
           </DropMenu>
 

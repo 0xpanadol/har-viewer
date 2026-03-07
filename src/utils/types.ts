@@ -26,6 +26,15 @@ export interface HarEntry {
   serverIPAddress?: string
   connection?: string
   _pinned?: boolean
+  _initiator?: { type?: string; url?: string; lineNumber?: number }
+  _webSocketMessages?: WebSocketMessage[]
+}
+
+export interface WebSocketMessage {
+  type: 'send' | 'receive'
+  time: number
+  opcode: number
+  data: string
 }
 
 export interface HarRequest {
@@ -109,9 +118,11 @@ export interface ParsedEntry {
   statusText: string
   contentType: string
   size: number
+  transferSize: number
   time: number
   startTime: number
   timings: HarTimings
+  initiator: string
 }
 
 export type SortColumn = 'none' | 'method' | 'url' | 'status' | 'type' | 'size' | 'time'
@@ -138,7 +149,9 @@ export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
   waterfall: true,
 }
 
-export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff' | 'perf' | 'grouping' | 'timeline' | 'compare'
+export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff' | 'perf' | 'grouping' | 'timeline' | 'compare' | 'initiator' | 'shortcuts'
+
+export type SearchScope = 'url' | 'body' | 'headers' | 'all'
 
 export type Theme = 'dark' | 'light'
 

@@ -49,6 +49,7 @@ export function EntryList() {
   const urlTooltipEnabled = useHarStore((s) => s.urlTooltipEnabled)
 
   const parentRef = useRef<HTMLDivElement>(null)
+  const lastCheckedRef = useRef<number>(-1)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: ParsedEntry } | null>(null)
   const [notePopup, setNotePopup] = useState<number | null>(null)
   const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null)
@@ -199,8 +200,8 @@ export function EntryList() {
   }
 
   return (
-    <div id="entry-list-wrap">
-      <div id="entry-header" style={{ gridTemplateColumns: gridCols }}>
+    <div id="entry-list-wrap" role="region" aria-label="Request list">
+      <div id="entry-header" style={{ gridTemplateColumns: gridCols }} role="row" aria-label="Column headers">
         <div className="hdr-check">
           <input
             type="checkbox"
@@ -246,8 +247,21 @@ export function EntryList() {
                     type="checkbox"
                     tabIndex={-1}
                     checked={isChecked}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={() => toggleCheck(entry._idx)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (e.shiftKey && lastCheckedRef.current >= 0) {
+                        const lastPos = filteredEntries.findIndex((fe) => fe._idx === lastCheckedRef.current)
+                        const curPos = virtualRow.index
+                        if (lastPos >= 0 && curPos >= 0) {
+                          const start = Math.min(lastPos, curPos)
+                          const end = Math.max(lastPos, curPos)
+                          const rangeIndices = filteredEntries.slice(start, end + 1).map((fe) => fe._idx)
+                          checkAll(rangeIndices)
+                        }
+                      }
+                    }}
+                    onChange={() => { toggleCheck(entry._idx); lastCheckedRef.current = entry._idx }}
+                    aria-label={`Select entry ${entry._idx + 1}`}
                   />
                 </div>
                 <div className="entry-idx">
@@ -272,7 +286,14 @@ export function EntryList() {
                 )}
                 {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>}
                 {vc.type && <div className="entry-type">{entry.contentType}</div>}
-                {vc.size && <div className="entry-size">{entry.size >= 0 ? formatBytes(entry.size) : '—'}</div>}
+                {vc.size && (
+                  <div className="entry-size" title={entry.transferSize >= 0 && entry.transferSize !== entry.size ? `Transfer: ${formatBytes(entry.transferSize)} / Content: ${formatBytes(entry.size)}` : undefined}>
+                    {entry.size >= 0 ? formatBytes(entry.size) : '—'}
+                    {entry.transferSize >= 0 && entry.transferSize !== entry.size && (
+                      <span className="transfer-size"> ({formatBytes(entry.transferSize)})</span>
+                    )}
+                  </div>
+                )}
                 {vc.time && <div className={`entry-time ${timeClass(entry.time)}`}>{formatTime(entry.time)}</div>}
                 {vc.waterfall && <WaterfallCell entry={entry} wfRange={wfRange} waterfallStart={waterfallStart} />}
               </div>

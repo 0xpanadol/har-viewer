@@ -7,6 +7,7 @@ import { ResponseTab } from './tabs/ResponseTab'
 import { CookiesTab } from './tabs/CookiesTab'
 import { TimingTab } from './tabs/TimingTab'
 import { RawTab } from './tabs/RawTab'
+import { WebSocketTab } from './tabs/WebSocketTab'
 
 const TABS: { id: DetailTab; label: string }[] = [
   { id: 'headers', label: 'Headers' },
@@ -49,6 +50,8 @@ export function DetailPanel() {
 
   if (!detailPanelOpen || !entry) return null
 
+  const hasWs = entry._raw._webSocketMessages && entry._raw._webSocketMessages.length > 0
+
   const renderTab = () => {
     switch (activeDetailTab) {
       case 'headers': return <HeadersTab entry={entry} searchQuery={searchQuery} />
@@ -58,6 +61,7 @@ export function DetailPanel() {
       case 'timing': return <TimingTab entry={entry} />
       case 'raw': return <RawTab entry={entry} />
     }
+    return null
   }
 
   return (
@@ -76,6 +80,14 @@ export function DetailPanel() {
             {t.label}
           </button>
         ))}
+        {hasWs && (
+          <button
+            className={`detail-tab ${activeDetailTab === ('websocket' as string) ? 'active' : ''}`}
+            onClick={() => setActiveDetailTab('websocket' as DetailTab)}
+          >
+            WS
+          </button>
+        )}
       </div>
       <div className="detail-search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="detail-search-icon">
@@ -95,7 +107,9 @@ export function DetailPanel() {
         )}
       </div>
       <div className="detail-body">
-        {renderTab()}
+        {activeDetailTab === ('websocket' as string) ? (
+          <WebSocketTab entry={entry._raw} searchQuery={searchQuery} />
+        ) : renderTab()}
       </div>
     </div>
   )
