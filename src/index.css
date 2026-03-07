@@ -57,6 +57,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg-0);color:var(--text-0)
 .welcome-btn:hover{background:var(--accent)}
 .welcome-btn:active{transform:scale(.97)}
 .welcome-hint{color:var(--text-3);font-size:12px}
+.welcome-github{display:inline-flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px;text-decoration:none;margin-top:8px;transition:color .15s}
+.welcome-github:hover{color:var(--text-0)}
+.welcome-github svg{width:16px;height:16px}
 
 /* Toolbar */
 #toolbar{display:none;background:var(--bg-1);border-bottom:1px solid var(--border)}
