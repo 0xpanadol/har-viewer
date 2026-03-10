@@ -1,9 +1,10 @@
 import { useRef, useMemo } from 'react'
 import { useHarStore } from '../store/harStore'
-import { formatBytes, formatTime } from '../utils/formatters'
+import { formatBytes, formatTime, timeClass } from '../utils/formatters'
 import { parseHarEntries } from '../utils/parsers'
 import { ResizableOverlay } from './ResizableOverlay'
-import type { HarLog } from '../utils/types'
+import { Section } from './Section'
+import type { HarLog, ParsedEntry } from '../utils/types'
 
 export function ComparePanel() {
   const setOverlayPanel = useHarStore((s) => s.setOverlayPanel)
@@ -104,6 +105,9 @@ export function ComparePanel() {
                 Clear comparison
               </button>
             </div>
+
+            {/* URL-level diff */}
+            <UrlDiff entriesA={allEntries} entriesB={compareEntries!} />
           </>
         )}
       </div>
@@ -141,5 +145,95 @@ function CompareRow({ label, a, b, numA, numB, lowerBetter }: {
       <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11 }}>{a}</span>
       <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color }}>{b}</span>
     </div>
+  )
+}
+
+function UrlDiff({ entriesA, entriesB }: { entriesA: ParsedEntry[]; entriesB: ParsedEntry[] }) {
+  const diff = useMemo(() => {
+    const mapA = new Map<string, ParsedEntry[]>()
+    const mapB = new Map<string, ParsedEntry[]>()
+    entriesA.forEach((e) => {
+      const key = `${e.method} ${e.path.split('?')[0]}`
+      mapA.set(key, [...(mapA.get(key) || []), e])
+    })
+    entriesB.forEach((e) => {
+      const key = `${e.method} ${e.path.split('?')[0]}`
+      mapB.set(key, [...(mapB.get(key) || []), e])
+    })
+
+    const added: ParsedEntry[] = []
+    const removed: ParsedEntry[] = []
+    const changed: { key: string; a: ParsedEntry; b: ParsedEntry; timeDelta: number; sizeDelta: number }[] = []
+
+    mapB.forEach((bEntries, key) => {
+      if (!mapA.has(key)) bEntries.forEach((e) => added.push(e))
+      else {
+        const aEntry = mapA.get(key)![0]
+        const bEntry = bEntries[0]
+        const timeDelta = bEntry.time - aEntry.time
+        const sizeDelta = bEntry.size - aEntry.size
+        if (Math.abs(timeDelta) > 50 || Math.abs(sizeDelta) > 500) {
+          changed.push({ key, a: aEntry, b: bEntry, timeDelta, sizeDelta })
+        }
+      }
+    })
+    mapA.forEach((aEntries, key) => {
+      if (!mapB.has(key)) aEntries.forEach((e) => removed.push(e))
+    })
+
+    changed.sort((a, b) => Math.abs(b.timeDelta) - Math.abs(a.timeDelta))
+    return { added, removed, changed }
+  }, [entriesA, entriesB])
+
+  return (
+    <>
+      <Section title={`New Requests`} badge={diff.added.length} defaultOpen={diff.added.length > 0 && diff.added.length <= 20}>
+        {diff.added.length === 0 && <div className="issues-empty">No new requests</div>}
+        {diff.added.slice(0, 30).map((e, i) => (
+          <div key={i} className="issue-row" style={{ cursor: 'default' }}>
+            <span style={{ color: 'var(--green)', fontSize: 10, width: 16, flexShrink: 0 }}>+</span>
+            <span className="issue-method">{e.method}</span>
+            <span className="issue-url">{e.path.split('?')[0].slice(0, 80)}</span>
+            <span className={`issue-time ${timeClass(e.time)}`}>{formatTime(e.time)}</span>
+          </div>
+        ))}
+      </Section>
+
+      <Section title={`Removed Requests`} badge={diff.removed.length} defaultOpen={diff.removed.length > 0 && diff.removed.length <= 20}>
+        {diff.removed.length === 0 && <div className="issues-empty">No removed requests</div>}
+        {diff.removed.slice(0, 30).map((e, i) => (
+          <div key={i} className="issue-row" style={{ cursor: 'default' }}>
+            <span style={{ color: 'var(--red)', fontSize: 10, width: 16, flexShrink: 0 }}>−</span>
+            <span className="issue-method">{e.method}</span>
+            <span className="issue-url">{e.path.split('?')[0].slice(0, 80)}</span>
+            <span className={`issue-time ${timeClass(e.time)}`}>{formatTime(e.time)}</span>
+          </div>
+        ))}
+      </Section>
+
+      <Section title={`Changed Requests`} badge={diff.changed.length} defaultOpen={diff.changed.length > 0}>
+        {diff.changed.length === 0 && <div className="issues-empty">No significant changes</div>}
+        {diff.changed.slice(0, 30).map((c, i) => (
+          <div key={i} className="issue-row" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+            <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+              <span className="issue-method">{c.key.split(' ')[0]}</span>
+              <span className="issue-url">{c.key.split(' ').slice(1).join(' ').slice(0, 80)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 12, fontSize: 10, fontFamily: 'var(--mono)', paddingLeft: 4 }}>
+              {c.timeDelta !== 0 && (
+                <span style={{ color: c.timeDelta > 0 ? 'var(--red)' : 'var(--green)' }}>
+                  Time: {c.timeDelta > 0 ? '+' : ''}{formatTime(c.timeDelta)}
+                </span>
+              )}
+              {c.sizeDelta !== 0 && (
+                <span style={{ color: c.sizeDelta > 0 ? 'var(--orange)' : 'var(--green)' }}>
+                  Size: {c.sizeDelta > 0 ? '+' : ''}{formatBytes(Math.abs(c.sizeDelta))}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </Section>
+    </>
   )
 }

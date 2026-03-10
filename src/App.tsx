@@ -22,6 +22,7 @@ import { TimelinePanel } from './components/TimelinePanel'
 import { ComparePanel } from './components/ComparePanel'
 import { InitiatorPanel } from './components/InitiatorPanel'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
+import { WaterfallChart } from './components/WaterfallChart'
 import { ToastContainer } from './components/Toast'
 
 export default function App() {
@@ -186,6 +187,7 @@ export default function App() {
                 {overlayPanel === 'compare' && <ComparePanel />}
                 {overlayPanel === 'initiator' && <InitiatorPanel />}
                 {(overlayPanel) === 'shortcuts' && <ShortcutsPanel />}
+                {overlayPanel === 'waterfall' && <WaterfallChart />}
               </>
             </ErrorBoundary>
           </div>

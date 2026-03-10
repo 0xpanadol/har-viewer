@@ -212,6 +212,7 @@ export function Toolbar({ onOpenFile }: Props) {
             <DropItem label="Grouping" active={overlayPanel === 'grouping'} onClick={() => setOverlayPanel(overlayPanel === 'grouping' ? 'none' : 'grouping')} />
             <DropItem label="Timeline" active={overlayPanel === 'timeline'} onClick={() => setOverlayPanel(overlayPanel === 'timeline' ? 'none' : 'timeline')} />
             <DropItem label="Initiator" active={overlayPanel === 'initiator'} onClick={() => setOverlayPanel(overlayPanel === 'initiator' ? 'none' : 'initiator')} />
+            <DropItem label="Waterfall" active={overlayPanel === 'waterfall'} onClick={() => setOverlayPanel(overlayPanel === 'waterfall' ? 'none' : 'waterfall')} />
             <DropItem label="Compare" active={overlayPanel === 'compare'} onClick={() => setOverlayPanel(overlayPanel === 'compare' ? 'none' : 'compare')} />
           </DropMenu>
 

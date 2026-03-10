@@ -652,3 +652,26 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .toast-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:99999;pointer-events:none}
 .toast-item{background:var(--bg-3);color:var(--text-0);border:1px solid var(--border);border-radius:var(--radius);padding:6px 14px;font-size:12px;font-family:var(--mono);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.35);animation:toast-in .2s ease-out}
 @keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Waterfall Chart ─── */
+.wfc-legend{display:flex;gap:12px;padding:6px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.wfc-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-2)}
+.wfc-legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.wfc-container{flex:1;overflow:auto;position:relative}
+.wfc-axis{position:sticky;top:0;height:24px;border-bottom:1px solid var(--border);background:var(--bg-1);z-index:2;position:relative}
+.wfc-tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--border);pointer-events:none}
+.wfc-tick-label{position:absolute;top:4px;left:4px;font-size:9px;color:var(--text-3);font-family:var(--mono);white-space:nowrap}
+.wfc-rows{position:relative}
+.wfc-row{display:flex;align-items:center;border-bottom:1px solid var(--bg-2);cursor:pointer;transition:background .1s;position:relative}
+.wfc-row:hover{background:var(--bg-2)}
+.wfc-label{display:flex;align-items:center;gap:4px;padding:0 8px;flex-shrink:0;overflow:hidden;font-size:11px;border-right:1px solid var(--border)}
+.wfc-status{font-family:var(--mono);font-size:10px;width:28px;text-align:right;flex-shrink:0}
+.wfc-method{color:var(--text-2);font-size:10px;width:32px;flex-shrink:0}
+.wfc-url{color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wfc-bars{position:absolute;top:0;right:0;bottom:0;overflow:hidden}
+.wfc-bar{position:absolute;top:4px;bottom:4px;border-radius:2px;min-width:1px}
+.wfc-time-label{position:absolute;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text-3);font-family:var(--mono);white-space:nowrap;pointer-events:none}
+.wfc-tooltip{position:fixed;background:var(--bg-2);border:1px solid var(--border-h);border-radius:var(--radius-lg);padding:8px 12px;font-size:11px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:300px;pointer-events:none}
+.wfc-tt-url{color:var(--text-0);font-family:var(--mono);font-size:10px;margin-bottom:6px;word-break:break-all}
+.wfc-tt-row{display:flex;gap:6px;color:var(--text-1);line-height:1.6}
+.wfc-tt-row span:first-child{color:var(--text-2);min-width:60px}

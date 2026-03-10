@@ -149,7 +149,7 @@ export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
   waterfall: true,
 }
 
-export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff' | 'perf' | 'grouping' | 'timeline' | 'compare' | 'initiator' | 'shortcuts'
+export type OverlayPanel = 'none' | 'stats' | 'issues' | 'diff' | 'perf' | 'grouping' | 'timeline' | 'compare' | 'initiator' | 'shortcuts' | 'waterfall'
 
 export type SearchScope = 'url' | 'body' | 'headers' | 'all'
 

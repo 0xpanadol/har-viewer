@@ -194,12 +194,55 @@ export function EntryList() {
       }
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         if (!filteredEntries.length) return
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
         e.preventDefault()
         const state = useHarStore.getState()
         let curIdx = filteredEntries.findIndex((e) => e._idx === state.selectedIdx)
         if (e.key === 'ArrowDown') curIdx = Math.min(filteredEntries.length - 1, curIdx + 1)
         else curIdx = Math.max(0, curIdx - 1)
         if (curIdx < 0) curIdx = 0
+        handleSelectEntry(filteredEntries[curIdx]._idx)
+        virtualizer.scrollToIndex(curIdx, { align: 'auto' })
+      }
+      // Enter to toggle detail panel
+      if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        const state = useHarStore.getState()
+        if (state.selectedIdx >= 0) {
+          e.preventDefault()
+          state.setDetailPanelOpen(!state.detailPanelOpen)
+        }
+      }
+      // Tab to cycle detail tabs when panel is open
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        const state = useHarStore.getState()
+        if (state.detailPanelOpen && state.selectedIdx >= 0) {
+          e.preventDefault()
+          const tabs: Array<'headers' | 'payload' | 'response' | 'cookies' | 'timing' | 'raw'> = ['headers', 'payload', 'response', 'cookies', 'timing', 'raw']
+          const curTabIdx = tabs.indexOf(state.activeDetailTab)
+          const nextTabIdx = e.shiftKey
+            ? (curTabIdx - 1 + tabs.length) % tabs.length
+            : (curTabIdx + 1) % tabs.length
+          state.setActiveDetailTab(tabs[nextTabIdx])
+        }
+      }
+      // Home/End to jump to first/last entry
+      if ((e.key === 'Home' || e.key === 'End') && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        if (!filteredEntries.length) return
+        e.preventDefault()
+        const idx = e.key === 'Home' ? 0 : filteredEntries.length - 1
+        handleSelectEntry(filteredEntries[idx]._idx)
+        virtualizer.scrollToIndex(idx, { align: 'auto' })
+      }
+      // Page Up/Down to jump 20 entries
+      if ((e.key === 'PageUp' || e.key === 'PageDown') && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        if (!filteredEntries.length) return
+        e.preventDefault()
+        const state = useHarStore.getState()
+        let curIdx = filteredEntries.findIndex((en) => en._idx === state.selectedIdx)
+        if (curIdx < 0) curIdx = 0
+        const step = 20
+        if (e.key === 'PageDown') curIdx = Math.min(filteredEntries.length - 1, curIdx + step)
+        else curIdx = Math.max(0, curIdx - step)
         handleSelectEntry(filteredEntries[curIdx]._idx)
         virtualizer.scrollToIndex(curIdx, { align: 'auto' })
       }
