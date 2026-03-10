@@ -188,3 +188,22 @@ export interface Annotation {
 
 // Grouping
 export type GroupBy = 'domain' | 'type' | 'status'
+
+// Search match locations
+export interface SearchMatchLocation {
+  url: boolean
+  headers: boolean
+  requestBody: boolean
+  responseBody: boolean
+  cookies: boolean
+}
+
+// Search match locations
+export interface SearchMatchLocation {
+  url: boolean
+  headers: boolean
+  requestBody: boolean
+  responseBody: boolean
+  cookies: boolean
+}
+

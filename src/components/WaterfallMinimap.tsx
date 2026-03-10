@@ -7,7 +7,7 @@ export function WaterfallMinimap() {
   const waterfallEnd = useHarStore((s) => s.waterfallEnd)
   const setSelectedIdx = useHarStore((s) => s.setSelectedIdx)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
-  const filteredEntries = useFilteredEntries()
+  const { entries: filteredEntries } = useFilteredEntries()
 
   const range = waterfallEnd - waterfallStart || 1
 

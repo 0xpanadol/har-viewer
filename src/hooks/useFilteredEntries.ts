@@ -1,8 +1,14 @@
 import { useMemo } from 'react'
 import { useHarStore } from '../store/harStore'
-import type { ParsedEntry } from '../utils/types'
+import type { ParsedEntry, SearchMatchLocation } from '../utils/types'
+import { getSearchMatchLocations } from '../utils/searchMatch'
 
-export function useFilteredEntries(): ParsedEntry[] {
+export interface FilteredEntriesResult {
+  entries: ParsedEntry[]
+  matchLocations: Map<number, SearchMatchLocation>
+}
+
+export function useFilteredEntries(): FilteredEntriesResult {
   const allEntries = useHarStore((s) => s.allEntries)
   const activeMethodFilters = useHarStore((s) => s.activeMethodFilters)
   const activeStatusFilters = useHarStore((s) => s.activeStatusFilters)
@@ -97,6 +103,14 @@ export function useFilteredEntries(): ParsedEntry[] {
       result = [...pinned, ...unpinned]
     }
 
-    return result
+    // Compute match locations for each filtered entry
+    const matchLocations = new Map<number, SearchMatchLocation>()
+    if (searchQuery && searchQuery.length >= 2) {
+      result.forEach((e) => {
+        matchLocations.set(e._idx, getSearchMatchLocations(e, searchQuery, useRegex))
+      })
+    }
+
+    return { entries: result, matchLocations }
   }, [allEntries, activeMethodFilters, activeStatusFilters, activeTypeFilters, activeDomainFilters, pinnedEntries, searchQuery, useRegex, negateSearch, sortCol, sortDir, minTime, maxTime, minSize, maxSize, searchScope])
 }

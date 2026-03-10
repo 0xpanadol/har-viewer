@@ -8,7 +8,9 @@ import { parseUrl } from '../utils/parsers'
 import { ContextMenu } from './ContextMenu'
 import { NoteEditor } from './NoteEditor'
 import { ConfirmDialog } from './ConfirmDialog'
-import type { ParsedEntry, SortColumn, VisibleColumns, SearchScope } from '../utils/types'
+import type { ParsedEntry, SortColumn, VisibleColumns, SearchScope, SearchMatchLocation } from '../utils/types'
+import { getBestTabForMatch } from '../utils/searchMatch'
+import { showToast } from './Toast'
 
 const ROW_H = 32
 
@@ -25,7 +27,7 @@ function buildGridCols(vc: VisibleColumns): string {
 }
 
 export function EntryList() {
-  const filteredEntries = useFilteredEntries()
+  const { entries: filteredEntries, matchLocations } = useFilteredEntries()
   const selectedIdx = useHarStore((s) => s.selectedIdx)
   const setSelectedIdx = useHarStore((s) => s.setSelectedIdx)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
@@ -55,6 +57,7 @@ export function EntryList() {
   const setNegateSearch = useHarStore((s) => s.setNegateSearch)
   const searchScope = useHarStore((s) => s.searchScope)
   const setSearchScope = useHarStore((s) => s.setSearchScope)
+  const setActiveDetailTab = useHarStore((s) => s.setActiveDetailTab)
 
   const parentRef = useRef<HTMLDivElement>(null)
   const lastCheckedRef = useRef<number>(-1)
@@ -139,8 +142,14 @@ export function EntryList() {
     (idx: number) => {
       setSelectedIdx(idx)
       setDetailPanelOpen(true)
+      // Auto-switch to the best tab when there's an active search
+      const loc = matchLocations.get(idx)
+      if (loc) {
+        const bestTab = getBestTabForMatch(loc)
+        if (bestTab) setActiveDetailTab(bestTab)
+      }
     },
-    [setSelectedIdx, setDetailPanelOpen]
+    [setSelectedIdx, setDetailPanelOpen, matchLocations, setActiveDetailTab]
   )
 
   const handleContextMenu = useCallback(
@@ -292,7 +301,7 @@ export function EntryList() {
                     <span className="path">{parsed.path.length > 80 ? parsed.path.slice(0, 80) + '…' : parsed.path}</span>
                   </div>
                 )}
-                {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}</div>}
+                {vc.status && <div className={`entry-status ${statusClass(entry.status)}`}>{entry.status || '—'}{searchQuery.length >= 2 && <MatchBadges loc={matchLocations.get(entry._idx)} />}</div>}
                 {vc.type && <div className="entry-type">{entry.contentType}</div>}
                 {vc.size && (
                   <div className="entry-size" title={entry.transferSize >= 0 && entry.transferSize !== entry.size ? `Transfer: ${formatBytes(entry.transferSize)} / Content: ${formatBytes(entry.size)}` : undefined}>
@@ -318,6 +327,9 @@ export function EntryList() {
           placeholder={useRegex ? 'Regex filter...' : 'Filter URL, method, status...'}
           value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           aria-label="Search and filter requests" />
+        {searchQuery.length >= 2 && (
+          <span className="entry-search-count">{filteredEntries.length} match{filteredEntries.length !== 1 ? 'es' : ''}</span>
+        )}
         <div className="entry-search-toggles">
           <button className={`search-toggle ${useRegex ? 'active' : ''}`} onClick={() => setUseRegex(!useRegex)} title="Use regex">.*</button>
           <button className={`search-toggle ${negateSearch ? 'active' : ''}`} onClick={() => setNegateSearch(!negateSearch)} title="Negate / exclude matches">!</button>
@@ -374,6 +386,24 @@ export function EntryList() {
   )
 }
 
+function MatchBadges({ loc }: { loc?: SearchMatchLocation }) {
+  if (!loc) return null
+  const badges: { label: string; title: string; cls: string }[] = []
+  if (loc.url) badges.push({ label: 'U', title: 'Match in URL', cls: 'match-badge-url' })
+  if (loc.headers) badges.push({ label: 'H', title: 'Match in Headers', cls: 'match-badge-headers' })
+  if (loc.requestBody) badges.push({ label: 'Q', title: 'Match in Request Body', cls: 'match-badge-req' })
+  if (loc.responseBody) badges.push({ label: 'R', title: 'Match in Response Body', cls: 'match-badge-res' })
+  if (loc.cookies) badges.push({ label: 'C', title: 'Match in Cookies', cls: 'match-badge-cookies' })
+  if (badges.length === 0) return null
+  return (
+    <div className="match-badges">
+      {badges.map((b) => (
+        <span key={b.label} className={`match-badge ${b.cls}`} title={b.title}>{b.label}</span>
+      ))}
+    </div>
+  )
+}
+
 function UrlTooltip({ x, y, entry }: { x: number; y: number; entry: ParsedEntry }) {
   let queryParams: { key: string; val: string }[] = []
   try {
@@ -397,8 +427,8 @@ function UrlTooltip({ x, y, entry }: { x: number; y: number; entry: ParsedEntry 
         </div>
       )}
       <div className="url-tooltip-actions">
-        <button onClick={() => navigator.clipboard.writeText(entry.url)}>Copy URL</button>
-        {queryParams.length > 0 && <button onClick={() => navigator.clipboard.writeText(queryParams.map((p) => `${decodeURIComponent(p.key)}=${decodeURIComponent(p.val)}`).join('\n'))}>Copy params</button>}
+        <button onClick={() => { navigator.clipboard.writeText(entry.url); showToast('Copied URL') }}>Copy URL</button>
+        {queryParams.length > 0 && <button onClick={() => { navigator.clipboard.writeText(queryParams.map((p) => `${decodeURIComponent(p.key)}=${decodeURIComponent(p.val)}`).join('\n')); showToast('Copied params') }}>Copy params</button>}
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { useHarStore } from '../store/harStore'
 import { useFilteredEntries } from '../hooks/useFilteredEntries'
 import { exportHarEntries, exportCookiesNetscape, exportCookiesJson, exportCsv, exportSanitizedHar } from '../utils/exporters'
 import { ConfirmDialog } from './ConfirmDialog'
+import { showToast } from './Toast'
 
 export function SelectionBar() {
   const checkedEntries = useHarStore((s) => s.checkedEntries)
@@ -13,7 +14,7 @@ export function SelectionBar() {
   const setOverlayPanel = useHarStore((s) => s.setOverlayPanel)
   const pinnedEntries = useHarStore((s) => s.pinnedEntries)
   const deleteEntries = useHarStore((s) => s.deleteEntries)
-  const filteredEntries = useFilteredEntries()
+  const { entries: filteredEntries } = useFilteredEntries()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (checkedEntries.length === 0 && !confirmDelete) return null
@@ -26,7 +27,7 @@ export function SelectionBar() {
   const handleExportHar = () => exportHarEntries(checkedRaw, 'selected', harData)
   const handleExportCsv = () => exportCsv(checked, 'selected')
   const handleExportSanitized = () => exportSanitizedHar(checkedRaw, 'selected', harData)
-  const handleCopyUrls = () => navigator.clipboard.writeText(checkedUrls.join('\n'))
+  const handleCopyUrls = () => { navigator.clipboard.writeText(checkedUrls.join('\n')); showToast('Copied URLs') }
   const handleExportCookiesTxt = () => exportCookiesNetscape(checkedRaw, 'selected')
   const handleExportCookiesJson = () => exportCookiesJson(checkedRaw, 'selected')
   const handleDiff = () => {

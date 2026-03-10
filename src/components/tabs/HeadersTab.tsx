@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ParsedEntry } from '../../utils/types'
 import { KvTable } from '../KvTable'
 import { Section } from '../Section'
@@ -11,6 +12,18 @@ interface Props {
 
 export function HeadersTab({ entry, searchQuery = '' }: Props) {
   const raw = entry._raw
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to first highlight
+  useEffect(() => {
+    if (searchQuery.length >= 2 && containerRef.current) {
+      const timer = setTimeout(() => {
+        const mark = containerRef.current?.querySelector('.search-hl')
+        if (mark) mark.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [searchQuery])
 
   const generalItems = [
     { name: 'Request URL', value: raw.request?.url || '' },
@@ -42,7 +55,7 @@ export function HeadersTab({ entry, searchQuery = '' }: Props) {
   const matchCount = q.length >= 2 ? filteredGeneral.length + filteredResHeaders.length + filteredReqHeaders.length + filteredQuery.length : 0
 
   return (
-    <>
+    <div ref={containerRef}>
       {q.length >= 2 && (
         <div className="tab-match-info">{matchCount} matching items</div>
       )}
@@ -78,6 +91,6 @@ export function HeadersTab({ entry, searchQuery = '' }: Props) {
           <KvTable items={filteredQuery} decode searchQuery={searchQuery} />
         </Section>
       )}
-    </>
+    </div>
   )
 }

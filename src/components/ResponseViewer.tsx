@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { formatBytes } from '../utils/formatters'
+import { showToast } from './Toast'
 
 interface Props {
   content: string
@@ -10,22 +11,13 @@ interface Props {
 }
 
 export function ResponseViewer({ content, language, rawBytes, mimeType, externalSearch }: Props) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchQuery = externalSearch || ''
   const [searchIdx, setSearchIdx] = useState(0)
   const [wordWrap, setWordWrap] = useState(true)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [jsonPath, setJsonPath] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-
-  // Sync external search query from DetailPanel
-  useEffect(() => {
-    if (externalSearch !== undefined && externalSearch.length >= 2 && externalSearch !== searchQuery) {
-      setSearchQuery(externalSearch)
-      setSearchIdx(0)
-    }
-  }, [externalSearch])
 
   // Search matches
   const matches = useMemo(() => {
@@ -42,6 +34,18 @@ export function ResponseViewer({ content, language, rawBytes, mimeType, external
     }
     return results
   }, [content, searchQuery])
+
+  // Auto-scroll to first match when external search is applied
+  useEffect(() => {
+    setSearchIdx(0)
+    if (externalSearch && externalSearch.length >= 2 && matches.length > 0) {
+      const timer = setTimeout(() => {
+        const el = bodyRef.current?.querySelector('[data-match="0"]')
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [externalSearch, matches.length])
 
   // Navigate matches
   const goToMatch = useCallback((idx: number) => {
@@ -62,22 +66,10 @@ export function ResponseViewer({ content, language, rawBytes, mimeType, external
     goToMatch(prev)
   }, [matches, searchIdx, goToMatch])
 
-  // Keyboard shortcut for search
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && document.activeElement === searchInputRef.current) {
-        e.preventDefault()
-        if (e.shiftKey) prevMatch()
-        else nextMatch()
-      }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [nextMatch, prevMatch])
-
   // Copy body
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(content)
+    showToast('Copied response body')
   }, [content])
 
   // Download response
@@ -146,31 +138,18 @@ export function ResponseViewer({ content, language, rawBytes, mimeType, external
     <div className="rv-container">
       {/* Toolbar */}
       <div className="rv-toolbar">
-        <div className="rv-search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="rv-search-icon">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            ref={searchInputRef}
-            className="rv-search"
-            type="text"
-            placeholder="Search in response..."
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setSearchIdx(0) }}
-          />
-          {matches.length > 0 && (
-            <span className="rv-match-count">{searchIdx + 1}/{matches.length}</span>
-          )}
-          {searchQuery.length >= 2 && matches.length === 0 && (
-            <span className="rv-match-count rv-no-match">0 results</span>
-          )}
-          {matches.length > 0 && (
+        {matches.length > 0 && (
+          <div className="rv-search-wrap rv-search-external">
+            <span className="rv-match-count">{searchIdx + 1}/{matches.length} in response</span>
             <div className="rv-match-nav">
               <button onClick={prevMatch} title="Previous match (Shift+Enter)">↑</button>
               <button onClick={nextMatch} title="Next match (Enter)">↓</button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+        {searchQuery.length >= 2 && matches.length === 0 && (
+          <span className="rv-match-count rv-no-match">0 in response</span>
+        )}
         <div className="rv-actions">
           {language === 'json' && (
             <>
@@ -201,7 +180,7 @@ export function ResponseViewer({ content, language, rawBytes, mimeType, external
 
       {/* JSON path breadcrumb */}
       {language === 'json' && jsonPath && (
-        <div className="rv-json-path" onClick={() => navigator.clipboard.writeText(jsonPath)}>
+        <div className="rv-json-path" onClick={() => { navigator.clipboard.writeText(jsonPath); showToast('Copied JSON path') }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           <span>{jsonPath}</span>
           <span className="rv-path-copy">click to copy</span>

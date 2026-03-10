@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import { formatBytes } from '../utils/formatters'
 import { highlightText } from '../utils/highlight'
 
@@ -13,6 +13,17 @@ export function CodeBlock({ content, searchQuery = '' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const truncated = content.length > MAX_DISPLAY
   const display = truncated ? content.slice(0, MAX_DISPLAY) : content
+
+  // Auto-scroll to first highlight
+  useEffect(() => {
+    if (searchQuery.length >= 2 && ref.current) {
+      const timer = setTimeout(() => {
+        const mark = ref.current?.querySelector('.search-hl')
+        if (mark) mark.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [searchQuery])
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(content).then(() => {

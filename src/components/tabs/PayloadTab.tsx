@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ParsedEntry } from '../../utils/types'
 import { KvTable } from '../KvTable'
 import { CodeBlock } from '../CodeBlock'
@@ -12,6 +13,18 @@ interface Props {
 
 export function PayloadTab({ entry, searchQuery = '' }: Props) {
   const pd = entry._raw.request?.postData
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to first highlight
+  useEffect(() => {
+    if (searchQuery.length >= 2 && containerRef.current) {
+      const timer = setTimeout(() => {
+        const mark = containerRef.current?.querySelector('.search-hl')
+        if (mark) mark.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [searchQuery])
 
   if (!pd) {
     return <div style={{ color: 'var(--text-3)', padding: 20, textAlign: 'center' }}>No request payload</div>
@@ -25,7 +38,7 @@ export function PayloadTab({ entry, searchQuery = '' }: Props) {
     : pd.params
 
   return (
-    <>
+    <div ref={containerRef}>
       <Section title="Content Type" defaultOpen>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-1)', padding: '4px 0' }}>
           {highlightText(pd.mimeType || '', searchQuery)}
@@ -43,6 +56,6 @@ export function PayloadTab({ entry, searchQuery = '' }: Props) {
           <CodeBlock content={tryParseJson(bodyText) ? prettyJson(tryParseJson(bodyText)) : bodyText} searchQuery={searchQuery} />
         </Section>
       )}
-    </>
+    </div>
   )
 }

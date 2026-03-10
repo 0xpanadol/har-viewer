@@ -3,6 +3,7 @@ import type { ParsedEntry } from '../utils/types'
 import { useHarStore } from '../store/harStore'
 import { exportHarEntries, buildCurl, buildFetch, buildAxios, buildPythonRequests, buildWget, buildPowerShell, buildHTTPie, exportCookiesNetscape, exportCookiesJson, buildCookieHeader, exportSanitizedHar } from '../utils/exporters'
 import { NoteEditor } from './NoteEditor'
+import { showToast } from './Toast'
 
 interface Props {
   x: number
@@ -26,6 +27,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   const removeAnnotation = useHarStore((s) => s.removeAnnotation)
 
   const [noteEditor, setNoteEditor] = useState(false)
+  const [subMenu, setSubMenu] = useState<string | null>(null)
 
   const handleClick = useCallback(
     (action: () => void) => {
@@ -36,7 +38,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   )
 
   useEffect(() => {
-    if (noteEditor) return // Don't close when note editor is open
+    if (noteEditor) return
     const handler = () => onClose()
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
@@ -49,7 +51,48 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
   const hasAnnotation = annotations.some((a) => a.entryIdx === entry._idx)
   const existingNote = annotations.find((a) => a.entryIdx === entry._idx)
 
-  const items: Array<{ label: string; action: () => void; disabled?: boolean } | 'sep'> = [
+  type MenuItem = { label: string; action: () => void; disabled?: boolean } | { label: string; submenu: string; children: { label: string; action: () => void }[] } | 'sep'
+
+  const copyAsChildren = [
+    { label: 'cURL', action: () => { navigator.clipboard.writeText(buildCurl(entry._raw)); showToast('Copied as cURL') } },
+    { label: 'fetch()', action: () => { navigator.clipboard.writeText(buildFetch(entry._raw)); showToast('Copied as fetch()') } },
+    { label: 'axios', action: () => { navigator.clipboard.writeText(buildAxios(entry._raw)); showToast('Copied as axios') } },
+    { label: 'Python requests', action: () => { navigator.clipboard.writeText(buildPythonRequests(entry._raw)); showToast('Copied as Python requests') } },
+    { label: 'wget', action: () => { navigator.clipboard.writeText(buildWget(entry._raw)); showToast('Copied as wget') } },
+    { label: 'PowerShell', action: () => { navigator.clipboard.writeText(buildPowerShell(entry._raw)); showToast('Copied as PowerShell') } },
+    { label: 'HTTPie', action: () => { navigator.clipboard.writeText(buildHTTPie(entry._raw)); showToast('Copied as HTTPie') } },
+  ]
+
+  const items: MenuItem[] = [
+    {
+      label: 'Copy URL',
+      action: () => { navigator.clipboard.writeText(entry.url); showToast('Copied URL') },
+    },
+    {
+      label: 'Copy as…',
+      submenu: 'copyAs',
+      children: copyAsChildren,
+    },
+    {
+      label: 'Copy response body',
+      action: () => {
+        const t = entry._raw.response?.content?.text
+        if (t) { navigator.clipboard.writeText(t); showToast('Copied response body') }
+      },
+    },
+    {
+      label: 'Copy request headers',
+      action: () => {
+        const h = (entry._raw.request?.headers || []).map((h) => `${h.name}: ${h.value}`).join('\n')
+        navigator.clipboard.writeText(h)
+        showToast('Copied request headers')
+      },
+    },
+    {
+      label: 'Copy cookies (header)',
+      action: () => { navigator.clipboard.writeText(buildCookieHeader([entry._raw])); showToast('Copied cookies') },
+    },
+    'sep',
     {
       label: 'Export this request as HAR',
       action: () => exportHarEntries([entry._raw], 'single', harData),
@@ -57,44 +100,6 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     {
       label: 'Export sanitized (redacted)',
       action: () => exportSanitizedHar([entry._raw], 'single', harData),
-    },
-    {
-      label: 'Copy URL',
-      action: () => navigator.clipboard.writeText(entry.url),
-    },
-    'sep',
-    {
-      label: 'Copy as cURL',
-      action: () => navigator.clipboard.writeText(buildCurl(entry._raw)),
-    },
-    {
-      label: 'Copy as fetch()',
-      action: () => navigator.clipboard.writeText(buildFetch(entry._raw)),
-    },
-    {
-      label: 'Copy as axios',
-      action: () => navigator.clipboard.writeText(buildAxios(entry._raw)),
-    },
-    {
-      label: 'Copy as Python requests',
-      action: () => navigator.clipboard.writeText(buildPythonRequests(entry._raw)),
-    },
-    {
-      label: 'Copy as wget',
-      action: () => navigator.clipboard.writeText(buildWget(entry._raw)),
-    },
-    {
-      label: 'Copy as PowerShell',
-      action: () => navigator.clipboard.writeText(buildPowerShell(entry._raw)),
-    },
-    {
-      label: 'Copy as HTTPie',
-      action: () => navigator.clipboard.writeText(buildHTTPie(entry._raw)),
-    },
-    'sep',
-    {
-      label: 'Copy cookies (header)',
-      action: () => navigator.clipboard.writeText(buildCookieHeader([entry._raw])),
     },
     {
       label: 'Export cookies (Netscape txt)',
@@ -107,9 +112,7 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     'sep',
     {
       label: hasAnnotation ? '📝 Edit note' : '📝 Add note',
-      action: () => {
-        // handled specially below — not through handleClick
-      },
+      action: () => {},
     },
     ...(hasAnnotation ? [{
       label: '🗑 Remove note',
@@ -145,21 +148,6 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
     },
     'sep',
     {
-      label: 'Copy response body',
-      action: () => {
-        const t = entry._raw.response?.content?.text
-        if (t) navigator.clipboard.writeText(t)
-      },
-    },
-    {
-      label: 'Copy request headers',
-      action: () => {
-        const h = (entry._raw.request?.headers || []).map((h) => `${h.name}: ${h.value}`).join('\n')
-        navigator.clipboard.writeText(h)
-      },
-    },
-    'sep',
-    {
       label: 'Replay request (fetch)',
       action: () => replayRequest(entry),
     },
@@ -182,6 +170,28 @@ export function ContextMenu({ x, y, entry, onClose }: Props) {
       {items.map((item, i) => {
         if (item === 'sep') return <div key={i} className="ctx-sep" />
         const isNoteBtn = item.label.includes('Add note') || item.label.includes('Edit note')
+
+        if ('submenu' in item) {
+          const isOpen = subMenu === item.submenu
+          return (
+            <div key={i} className="ctx-submenu-wrap" onMouseEnter={() => setSubMenu(item.submenu)} onMouseLeave={() => setSubMenu(null)}>
+              <button className="ctx-has-sub">
+                {item.label}
+                <span className="ctx-arrow">▸</span>
+              </button>
+              {isOpen && (
+                <div className="ctx-submenu">
+                  {item.children.map((child, ci) => (
+                    <button key={ci} onClick={() => handleClick(child.action)}>
+                      {child.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        }
+
         return (
           <button
             key={i}

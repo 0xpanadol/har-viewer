@@ -67,7 +67,7 @@ export function Toolbar({ onOpenFile }: Props) {
   const setTheme = useHarStore((s) => s.setTheme)
   const loadHarData = useHarStore((s) => s.loadHarData)
   const fileName = useHarStore((s) => s.fileName)
-  const filteredEntries = useFilteredEntries()
+  const { entries: filteredEntries } = useFilteredEntries()
   const mergeRef = useRef<HTMLInputElement>(null)
   const selectedIdx = useHarStore((s) => s.selectedIdx)
   const pinnedEntries = useHarStore((s) => s.pinnedEntries)

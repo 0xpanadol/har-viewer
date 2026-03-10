@@ -22,6 +22,7 @@ import { TimelinePanel } from './components/TimelinePanel'
 import { ComparePanel } from './components/ComparePanel'
 import { InitiatorPanel } from './components/InitiatorPanel'
 import { ShortcutsPanel } from './components/ShortcutsPanel'
+import { ToastContainer } from './components/Toast'
 
 export default function App() {
   const allEntries = useHarStore((s) => s.allEntries)
@@ -140,6 +141,7 @@ export default function App() {
 
   return (
     <div id="app">
+      <ToastContainer />
       <DropZone onFileDrop={loadFile} />
       <LoadingOverlay visible={loading} text={loadText} progress={progress} />
       <input

@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react'
 import type { ParsedEntry } from '../../utils/types'
 import { tryDecodeBase64, tryParseJson, prettyJson } from '../../utils/parsers'
 import { exportCookiesNetscape, exportCookiesJson, buildCookieHeader } from '../../utils/exporters'
 import { Section } from '../Section'
 import { highlightText } from '../../utils/highlight'
+import { showToast } from '../Toast'
 
 interface Props {
   entry: ParsedEntry
@@ -13,6 +15,18 @@ export function CookiesTab({ entry, searchQuery = '' }: Props) {
   const reqCookies = entry._raw.request?.cookies || []
   const resCookies = entry._raw.response?.cookies || []
   const hasCookies = reqCookies.length > 0 || resCookies.length > 0
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to first highlight
+  useEffect(() => {
+    if (searchQuery.length >= 2 && containerRef.current) {
+      const timer = setTimeout(() => {
+        const mark = containerRef.current?.querySelector('.search-hl')
+        if (mark) mark.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [searchQuery])
 
   if (!hasCookies) {
     return <div style={{ color: 'var(--text-3)', padding: 20, textAlign: 'center' }}>No cookies</div>
@@ -28,9 +42,9 @@ export function CookiesTab({ entry, searchQuery = '' }: Props) {
   const filteredRes = filterCookies(resCookies)
 
   return (
-    <>
+    <div ref={containerRef}>
       <div className="cookie-actions">
-        <button className="tool-btn" onClick={() => navigator.clipboard.writeText(buildCookieHeader([entry._raw]))} title="Copy as Cookie header">
+        <button className="tool-btn" onClick={() => { navigator.clipboard.writeText(buildCookieHeader([entry._raw])); showToast('Copied cookie header') }} title="Copy as Cookie header">
           Copy header
         </button>
         <button className="tool-btn" onClick={() => exportCookiesNetscape([entry._raw], `req-${entry._idx + 1}`)} title="Export Netscape cookies.txt">
@@ -105,6 +119,6 @@ export function CookiesTab({ entry, searchQuery = '' }: Props) {
           </table>
         </Section>
       )}
-    </>
+    </div>
   )
 }

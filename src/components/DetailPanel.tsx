@@ -26,10 +26,20 @@ export function DetailPanel() {
   const activeDetailTab = useHarStore((s) => s.activeDetailTab)
   const setDetailPanelOpen = useHarStore((s) => s.setDetailPanelOpen)
   const setActiveDetailTab = useHarStore((s) => s.setActiveDetailTab)
+  const globalSearchQuery = useHarStore((s) => s.searchQuery)
   const [searchQuery, setSearchQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+  const prevSelectedRef = useRef<number>(-1)
 
   const entry = allEntries.find((e) => e._idx === selectedIdx)
+
+  // Auto-forward global search query when selecting a new entry
+  useEffect(() => {
+    if (detailPanelOpen && entry && globalSearchQuery.length >= 2 && selectedIdx !== prevSelectedRef.current) {
+      setSearchQuery(globalSearchQuery)
+    }
+    prevSelectedRef.current = selectedIdx
+  }, [selectedIdx, detailPanelOpen, entry, globalSearchQuery])
 
   // Focus search on Ctrl+F when detail panel is open
   useEffect(() => {
