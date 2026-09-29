@@ -1,0 +1,267 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ─── Design tokens ─────────────────────────────────────────────────────────
+   Semantic roles only; components never reference raw colors.
+   Chart colors (phase-*, chart-*) were validated for CVD separation and
+   contrast against each mode's surface (see README → Design system). */
+
+:root {
+  --background: oklch(0.995 0 0);
+  --foreground: oklch(0.2 0.006 286);
+  --panel: oklch(0.984 0.0015 286);
+  --popover: oklch(1 0 0);
+  --muted: oklch(0.962 0.0025 286);
+  --muted-foreground: oklch(0.46 0.012 286);
+  --subtle-foreground: oklch(0.6 0.01 286);
+  --border: oklch(0.918 0.004 286);
+  --border-strong: oklch(0.87 0.006 286);
+  --input: oklch(0.9 0.005 286);
+  --ring: oklch(0.56 0.2 277);
+  --primary: oklch(0.52 0.2 277);
+  --primary-foreground: oklch(0.99 0 0);
+  --selection: oklch(0.52 0.2 277 / 0.09);
+  --selection-strong: oklch(0.52 0.2 277 / 0.16);
+
+  --success: oklch(0.5 0.13 155);
+  --warning: oklch(0.58 0.14 65);
+  --danger: oklch(0.54 0.2 25);
+  --info: oklch(0.52 0.16 252);
+  --highlight: oklch(0.88 0.15 95);
+
+  --phase-blocked: #b4b4bc;
+  --phase-dns: #1baf7a;
+  --phase-connect: #eb6834;
+  --phase-ssl: #4a3aa7;
+  --phase-send: #008300;
+  --phase-wait: #2a78d6;
+  --phase-receive: #eda100;
+
+  --chart-neutral: oklch(0.8 0.012 286);
+  --chart-series: #2a78d6;
+  --chart-warning: #fab219;
+  --chart-critical: #d03b3b;
+  --chart-grid: oklch(0.93 0.004 286);
+
+  --method-get: oklch(0.5 0.15 252);
+  --method-post: oklch(0.5 0.13 155);
+  --method-put: oklch(0.56 0.14 65);
+  --method-delete: oklch(0.54 0.2 25);
+  --method-other: oklch(0.5 0.1 300);
+
+  --syntax-key: oklch(0.48 0.16 265);
+  --syntax-string: oklch(0.5 0.13 150);
+  --syntax-number: oklch(0.55 0.15 50);
+  --syntax-literal: oklch(0.5 0.18 320);
+  --syntax-tag: oklch(0.5 0.16 20);
+  --syntax-attr: oklch(0.52 0.14 75);
+  --syntax-comment: oklch(0.6 0.01 286);
+
+  --shadow-color: 240 6% 10%;
+}
+
+[data-theme='dark'] {
+  --background: oklch(0.155 0.004 286);
+  --foreground: oklch(0.965 0.003 286);
+  --panel: oklch(0.18 0.004 286);
+  --popover: oklch(0.205 0.005 286);
+  --muted: oklch(0.235 0.005 286);
+  --muted-foreground: oklch(0.72 0.01 286);
+  --subtle-foreground: oklch(0.56 0.01 286);
+  --border: oklch(1 0 0 / 0.075);
+  --border-strong: oklch(1 0 0 / 0.13);
+  --input: oklch(1 0 0 / 0.11);
+  --ring: oklch(0.68 0.16 277);
+  --primary: oklch(0.66 0.17 277);
+  --primary-foreground: oklch(0.16 0.01 277);
+  --selection: oklch(0.66 0.17 277 / 0.13);
+  --selection-strong: oklch(0.66 0.17 277 / 0.22);
+
+  --success: oklch(0.76 0.15 155);
+  --warning: oklch(0.82 0.13 80);
+  --danger: oklch(0.7 0.17 22);
+  --info: oklch(0.74 0.12 245);
+  --highlight: oklch(0.8 0.14 90);
+
+  --phase-blocked: #5b5b66;
+  --phase-dns: #199e70;
+  --phase-connect: #d95926;
+  --phase-ssl: #9085e9;
+  --phase-send: #008300;
+  --phase-wait: #3987e5;
+  --phase-receive: #c98500;
+
+  --chart-neutral: oklch(0.42 0.012 286);
+  --chart-series: #3987e5;
+  --chart-warning: #fab219;
+  --chart-critical: #d03b3b;
+  --chart-grid: oklch(1 0 0 / 0.06);
+
+  --method-get: oklch(0.76 0.11 245);
+  --method-post: oklch(0.78 0.14 155);
+  --method-put: oklch(0.83 0.13 80);
+  --method-delete: oklch(0.72 0.16 22);
+  --method-other: oklch(0.76 0.1 300);
+
+  --syntax-key: oklch(0.78 0.11 265);
+  --syntax-string: oklch(0.8 0.13 150);
+  --syntax-number: oklch(0.8 0.12 60);
+  --syntax-literal: oklch(0.76 0.13 320);
+  --syntax-tag: oklch(0.74 0.14 20);
+  --syntax-attr: oklch(0.82 0.11 80);
+  --syntax-comment: oklch(0.56 0.01 286);
+
+  --shadow-color: 240 10% 2%;
+}
+
+@theme inline {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-popover: var(--popover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-selection: var(--selection);
+  --color-selection-strong: var(--selection-strong);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-highlight: var(--highlight);
+
+  --color-phase-blocked: var(--phase-blocked);
+  --color-phase-dns: var(--phase-dns);
+  --color-phase-connect: var(--phase-connect);
+  --color-phase-ssl: var(--phase-ssl);
+  --color-phase-send: var(--phase-send);
+  --color-phase-wait: var(--phase-wait);
+  --color-phase-receive: var(--phase-receive);
+
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-series: var(--chart-series);
+  --color-chart-warning: var(--chart-warning);
+  --color-chart-critical: var(--chart-critical);
+  --color-chart-grid: var(--chart-grid);
+
+  --color-method-get: var(--method-get);
+  --color-method-post: var(--method-post);
+  --color-method-put: var(--method-put);
+  --color-method-delete: var(--method-delete);
+  --color-method-other: var(--method-other);
+
+  --color-syntax-key: var(--syntax-key);
+  --color-syntax-string: var(--syntax-string);
+  --color-syntax-number: var(--syntax-number);
+  --color-syntax-literal: var(--syntax-literal);
+  --color-syntax-tag: var(--syntax-tag);
+  --color-syntax-attr: var(--syntax-attr);
+  --color-syntax-comment: var(--syntax-comment);
+
+  --shadow-overlay:
+    0 0 0 1px var(--border), 0 8px 24px -6px hsl(var(--shadow-color) / 0.24),
+    0 2px 6px -2px hsl(var(--shadow-color) / 0.16);
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
+    overflow: hidden;
+  }
+
+  ::selection {
+    background: var(--color-selection-strong);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 1px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+
+  /* Search matches rendered by <Highlight />. The active match is driven by find navigation. */
+  mark[data-hl] {
+    background: color-mix(in oklab, var(--color-highlight) 38%, transparent);
+    color: inherit;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-highlight) 45%, transparent);
+  }
+
+  mark[data-hl][data-active] {
+    background: var(--color-highlight);
+    color: oklch(0.2 0.02 90);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lets the browser skip layout/paint for off-screen rows in long source views. */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 20px;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
