@@ -1,4 +1,4 @@
-import { statusGroup } from './parse'
+import { entryStatusGroup } from './parse'
 import type { Entry } from './types'
 
 export type SearchScope = 'url' | 'headers' | 'body' | 'all'
@@ -110,7 +110,7 @@ export function filterEntries(entries: readonly Entry[], c: FilterCriteria): Ent
 
   return entries.filter((e) => {
     if (methods.size && !methods.has(e.method)) return false
-    if (statuses.size && !statuses.has(statusGroup(e.status))) return false
+    if (statuses.size && !statuses.has(entryStatusGroup(e))) return false
     if (types.size && !types.has(e.type)) return false
     if (domains.size && !domains.has(e.host)) return false
     if (c.minTime !== null && e.time < c.minTime) return false

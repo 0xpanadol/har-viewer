@@ -10,10 +10,16 @@ import { formatBytes, formatNumber, formatPercent } from '@/lib/format'
 export function StatusCard({ entries }: { entries: readonly Entry[] }) {
   const statuses = computeFacets(entries).statuses
   const total = entries.length || 1
-  const series = STATUS_SERIES.map((s) => ({
-    ...s,
-    count: entries.filter((e) => seriesOf(statusGroup(e.status)) === s.key).length,
-  })).filter((s) => s.count > 0)
+  const pendingCount = entries.filter((e) => e.pending).length
+  const series = [
+    ...(pendingCount > 0
+      ? [{ key: 'pending', label: 'Pending', swatch: 'bg-subtle-foreground/60', count: pendingCount }]
+      : []),
+    ...STATUS_SERIES.map((s) => ({
+      ...s,
+      count: entries.filter((e) => !e.pending && seriesOf(statusGroup(e.status)) === s.key).length,
+    })),
+  ].filter((s) => s.count > 0)
   return (
     <Card title="Status codes" description="Share of responses by class">
       <div className="flex flex-col gap-3 p-4">

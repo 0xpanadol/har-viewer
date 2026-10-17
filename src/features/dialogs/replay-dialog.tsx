@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog'
 import type { Entry } from '@/har/types'
 import { formatDuration } from '@/lib/format'
-import { replayRequest, type ReplayResult } from '@/services/replay'
+import { replayEntry, type ReplayResult } from '@/services/replay'
+import { hostHooks, isStreamConnected } from '@/services/stream'
 import { useAppStore } from '@/store'
 import { selectEntryMap } from '@/store/selectors'
 
@@ -25,14 +26,15 @@ function ReplayBody({ entry }: { entry: Entry }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    replayRequest(entry, controller.signal)
+    replayEntry(entry, controller.signal)
       .then((result) => setState({ status: 'done', result }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         setState({ status: 'error', message: error instanceof Error ? error.message : String(error) })
       })
     return () => controller.abort()
-  }, [entry])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry.id])
 
   if (state.status === 'loading') {
     return (
@@ -48,8 +50,10 @@ function ReplayBody({ entry }: { entry: Entry }) {
         <CircleX className="size-5 text-danger" />
         <p className="text-[13px] font-medium">The request didn’t go through</p>
         <p className="max-w-md text-xs text-muted-foreground">
-          {state.message}. Browsers block cross-origin replays unless the server allows this page’s origin via
-          CORS — copy the request as cURL to run it from a terminal instead.
+          {state.message}.{' '}
+          {hostHooks()?.onReplay || isStreamConnected()
+            ? 'The replay didn’t complete — check the stream host logs for details.'
+            : 'Browsers block cross-origin replays unless the server allows this page’s origin via CORS — copy the request as cURL to run it from a terminal instead.'}
         </p>
       </div>
     )

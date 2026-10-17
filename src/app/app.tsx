@@ -5,6 +5,7 @@ import { useFileDrop } from '@/hooks/use-file-drop'
 import { useThemeEffect } from '@/hooks/use-theme'
 import { useUrlHashSync } from '@/hooks/use-url-sync'
 import { openFiles, restoreSession } from '@/services/capture'
+import { connectStream, streamConfig } from '@/services/stream'
 import { applyCriteriaFromHash } from '@/services/url-state'
 import { useAppStore } from '@/store'
 import { useHasCapture } from '@/store/selectors'
@@ -25,7 +26,9 @@ function useDocumentTitle() {
 export function App() {
   const hasCapture = useHasCapture()
   const loading = useAppStore((s) => s.loading)
-  const [restoring, setRestoring] = useState(true)
+  const live = useAppStore((s) => s.live)
+  const isLiveEnv = streamConfig() !== null
+  const [restoring, setRestoring] = useState(!isLiveEnv)
   const dragging = useFileDrop(onDropFiles)
 
   useThemeEffect()
@@ -34,13 +37,21 @@ export function App() {
   useUrlHashSync(hasCapture && !restoring)
 
   useEffect(() => {
+    if (streamConfig()) {
+      connectStream()
+      return
+    }
     applyCriteriaFromHash()
     void restoreSession().finally(() => setRestoring(false))
   }, [])
 
+  const connectingLive = isLiveEnv && !hasCapture && live?.status === 'connecting'
+
   return (
     <TooltipProvider delayDuration={450} skipDelayDuration={150}>
-      {restoring ? (
+      {connectingLive ? (
+        <LoadingScreen label="Connecting to live stream" progress={null} />
+      ) : restoring ? (
         <LoadingScreen label="Restoring your last session" progress={null} />
       ) : loading ? (
         <LoadingScreen {...loading} />

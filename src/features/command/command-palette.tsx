@@ -83,7 +83,7 @@ function PaletteBody() {
                   <span className="text-subtle-foreground">{entry.host}</span>
                   {entry.path}
                 </span>
-                <StatusCode status={entry.status} />
+                <StatusCode status={entry.status} pending={entry.pending} />
               </CommandItem>
             ))}
           </CommandGroup>

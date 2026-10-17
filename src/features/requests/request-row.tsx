@@ -98,7 +98,7 @@ export const RequestRow = memo(function RequestRow(props: RowProps) {
       )}
       {columns.status && (
         <div role="gridcell" className="px-2">
-          <StatusCode status={entry.status} />
+          <StatusCode status={entry.status} pending={entry.pending} />
         </div>
       )}
       {columns.type && (

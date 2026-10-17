@@ -7,6 +7,7 @@ import { copyText } from '@/lib/clipboard'
 import { pluralize } from '@/lib/format'
 import { useAppStore } from '@/store'
 import { selectVisibleEntries } from '@/store/selectors'
+import { hostHooks, isStreamConnected, streamDelete } from './stream'
 
 export const copyUrl = (entry: Entry) => copyText(entry.url, 'URL copied')
 
@@ -37,6 +38,18 @@ export const copyUrls = (entries: readonly Entry[]) =>
 /** Removes requests and moves the selection to the nearest surviving visible row. Undoable. */
 export function deleteEntries(ids: readonly number[]): void {
   if (!ids.length) return
+  const isLive = useAppStore.getState().source === 'live'
+  if (isLive) {
+    const onDelete = hostHooks()?.onDelete
+    if (onDelete) {
+      onDelete(ids)
+      return
+    }
+    if (isStreamConnected()) {
+      streamDelete(ids)
+      return
+    }
+  }
   const state = useAppStore.getState()
   const doomed = new Set(ids)
   const visible = selectVisibleEntries(state)

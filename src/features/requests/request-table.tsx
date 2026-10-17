@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { SearchX } from 'lucide-react'
+import { Radio, SearchX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -22,6 +22,8 @@ import { TableHeader } from './table-header'
 
 export function RequestTable() {
   const entries = useVisibleEntries()
+  const source = useAppStore((s) => s.source)
+  const totalCount = useAppStore((s) => s.entries.length)
   const preferredColumns = useAppStore((s) => s.columns)
   const selectedId = useAppStore((s) => s.selectedId)
   const checked = useAppStore(selectCheckedSet)
@@ -136,17 +138,26 @@ export function RequestTable() {
         onToggleAll={toggleAll}
       />
       {entries.length === 0 ? (
-        <EmptyState
-          icon={<SearchX />}
-          title="No requests match"
-          description="Try a different search, or remove some filters."
-          action={
-            <Button size="sm" onClick={() => useAppStore.getState().resetFilters()}>
-              Clear filters
-            </Button>
-          }
-          className="flex-1"
-        />
+        source === 'live' && totalCount === 0 ? (
+          <EmptyState
+            icon={<Radio />}
+            title="Waiting for requests"
+            description="Traffic from the live stream appears here as it happens."
+            className="flex-1"
+          />
+        ) : (
+          <EmptyState
+            icon={<SearchX />}
+            title="No requests match"
+            description="Try a different search, or remove some filters."
+            action={
+              <Button size="sm" onClick={() => useAppStore.getState().resetFilters()}>
+                Clear filters
+              </Button>
+            }
+            className="flex-1"
+          />
+        )
       ) : (
         <ContextMenu onOpenChange={(open) => !open && setMenuEntryId(null)}>
           <ContextMenuTrigger asChild>

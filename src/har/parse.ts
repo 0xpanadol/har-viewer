@@ -56,6 +56,10 @@ export function statusGroup(status: number): StatusGroup {
   return `${Math.min(5, Math.floor(status / 100))}xx` as StatusGroup
 }
 
+export function entryStatusGroup(entry: Entry): StatusGroup {
+  return entry.pending ? 'pending' : statusGroup(entry.status)
+}
+
 function contentSize(e: HarEntry): number {
   const content = e.response?.content?.size
   const body = e.response?.bodySize
@@ -100,6 +104,7 @@ export function toEntry(raw: HarEntry, id: number): Entry {
     path,
     status: raw.response?.status ?? 0,
     statusText: raw.response?.statusText ?? '',
+    pending: raw.response?._pending === true,
     type: resourceType(raw),
     size: contentSize(raw),
     transferSize: transferSize(raw),
@@ -127,6 +132,13 @@ export function captureRange(entries: readonly Entry[]): CaptureRange {
     if (e.startTime + e.time > end) end = e.startTime + e.time
   }
   return Number.isFinite(start) ? { start, end } : { start: 0, end: 0 }
+}
+
+export function growRange(range: CaptureRange, e: Entry): CaptureRange {
+  if (!e.startTime) return range
+  const end = e.startTime + e.time
+  if (!range.start && !range.end) return { start: e.startTime, end }
+  return { start: Math.min(range.start, e.startTime), end: Math.max(range.end, end) }
 }
 
 export function withEntries(log: HarLog, entries: readonly Entry[]): HarLog {

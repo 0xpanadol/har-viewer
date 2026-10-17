@@ -1,9 +1,10 @@
-import { ChartGantt, Download, FileUp, FlaskConical, Lock, Search, TriangleAlert } from 'lucide-react'
+import { ChartGantt, Download, FileUp, FlaskConical, Lock, Radio, Search, TriangleAlert } from 'lucide-react'
 import { GithubIcon, LogoMark, REPO_URL } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import { KbdCombo } from '@/components/ui/kbd'
 import { MOD } from '@/lib/platform'
 import { openSample } from '@/services/capture'
+import { connectStream, streamConfig } from '@/services/stream'
 import { openFromPicker } from '../command/commands'
 import { ThemeMenu } from '../shell/theme-menu'
 import { CaptureGuide } from './capture-guide'
@@ -61,6 +62,11 @@ export function WelcomeScreen() {
           diff captures — offline.
         </p>
 
+        {streamConfig() && (
+          <Button size="lg" className="mt-8" onClick={() => connectStream()}>
+            <Radio /> Connect to live stream
+          </Button>
+        )}
         <button
           type="button"
           onClick={() => void openFromPicker()}

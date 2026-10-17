@@ -1,4 +1,4 @@
-import { captureRange, findHeader, statusGroup } from './parse'
+import { captureRange, entryStatusGroup, findHeader, statusGroup } from './parse'
 import { PHASES, phaseSegments, type PhaseKey } from './timings'
 import type { Entry, HarLog, StatusGroup } from './types'
 
@@ -26,7 +26,7 @@ export function summarize(entries: readonly Entry[], log: HarLog | null): Captur
   for (const e of entries) {
     contentBytes += bytes(e.size)
     transferredBytes += bytes(e.transferSize)
-    if (e.status >= 400 || e.status === 0) errors++
+    if (!e.pending && (e.status >= 400 || e.status === 0)) errors++
     domains.add(e.host)
   }
   return {
@@ -53,7 +53,7 @@ export interface GroupRow {
 
 export function groupEntries(entries: readonly Entry[], by: GroupKey): GroupRow[] {
   const keyOf = (e: Entry) =>
-    by === 'domain' ? e.host || '(none)' : by === 'type' ? e.type : statusGroup(e.status)
+    by === 'domain' ? e.host || '(none)' : by === 'type' ? e.type : entryStatusGroup(e)
   const rows = new Map<string, GroupRow & { totalTime: number }>()
   for (const e of entries) {
     const key = keyOf(e)
@@ -61,7 +61,7 @@ export function groupEntries(entries: readonly Entry[], by: GroupKey): GroupRow[
     row.count++
     row.bytes += bytes(e.size)
     row.totalTime += e.time
-    if (e.status >= 400 || e.status === 0) row.errors++
+    if (!e.pending && (e.status >= 400 || e.status === 0)) row.errors++
     rows.set(key, row)
   }
   return [...rows.values()]
@@ -99,23 +99,24 @@ export function profilePerformance(entries: readonly Entry[]): PerformanceProfil
   const phaseTotals = new Map<PhaseKey, number>()
 
   for (const e of entries) {
-    if (e.status === 304) cached++
-    else if (e.status >= 200 && e.status < 400) fresh++
-    if (e.status >= 300 && e.status < 400 && e.status !== 304) redirects++
     if (e.method === 'OPTIONS') preflights++
     if (e.raw.connection) connections.add(e.raw.connection)
-
-    const encoded = findHeader(e.raw.response?.headers, 'content-encoding')
-    const body = e.raw.response?.bodySize ?? -1
-    const decoded = e.raw.response?.content?.size ?? -1
-    if (encoded) {
-      compressed++
-      if (body > 0 && decoded > 0) {
-        wireBytes += body
-        decodedBytes += decoded
+    if (!e.pending) {
+      if (e.status === 304) cached++
+      else if (e.status >= 200 && e.status < 400) fresh++
+      if (e.status >= 300 && e.status < 400 && e.status !== 304) redirects++
+      const encoded = findHeader(e.raw.response?.headers, 'content-encoding')
+      const body = e.raw.response?.bodySize ?? -1
+      const decoded = e.raw.response?.content?.size ?? -1
+      if (encoded) {
+        compressed++
+        if (body > 0 && decoded > 0) {
+          wireBytes += body
+          decodedBytes += decoded
+        }
+      } else {
+        uncompressed++
       }
-    } else {
-      uncompressed++
     }
 
     const version = (e.httpVersion || 'unknown').toLowerCase()
@@ -181,6 +182,7 @@ export function histogram(
     total: 0,
   }))
   for (const e of entries) {
+    if (e.pending) continue
     const index = Math.min(count - 1, Math.max(0, Math.floor((e.startTime - start) / width)))
     const bucket = buckets[index]!
     bucket.counts[seriesOf(statusGroup(e.status))]++

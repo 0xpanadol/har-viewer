@@ -5,7 +5,7 @@ import { STATUS_DOT } from '@/components/status-colors'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buildInitiatorTree, type InitiatorNode } from '@/har/initiators'
-import { statusGroup } from '@/har/parse'
+import { entryStatusGroup } from '@/har/parse'
 import { cn } from '@/lib/cn'
 import { formatDuration } from '@/lib/format'
 import { useAppStore } from '@/store'
@@ -51,7 +51,7 @@ function TreeNode({ node, depth, collapsed, onToggle, selectedId }: NodeProps) {
         >
           <ChevronRight className={cn('size-3 transition-transform', open && 'rotate-90')} />
         </button>
-        <span className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[statusGroup(entry.status)])} />
+        <span className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[entryStatusGroup(entry)])} />
         <MethodLabel method={entry.method} className="w-12 shrink-0 text-2xs" />
         <span className="min-w-0 flex-1 truncate font-mono" title={entry.url}>
           <span className="text-subtle-foreground">{entry.host}</span>

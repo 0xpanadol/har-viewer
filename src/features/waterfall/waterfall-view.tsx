@@ -6,7 +6,7 @@ import { MethodLabel } from '@/components/http-labels'
 import { STATUS_DOT } from '@/components/status-colors'
 import { TimeAxisLabels, TimeGridLines } from '@/components/time-axis'
 import { EmptyState } from '@/components/ui/empty-state'
-import { statusGroup } from '@/har/parse'
+import { entryStatusGroup } from '@/har/parse'
 import { phaseSegments } from '@/har/timings'
 import type { Entry } from '@/har/types'
 import { cn } from '@/lib/cn'
@@ -117,7 +117,7 @@ function WaterfallChart({ entries }: { entries: Entry[] }) {
                   style={{ width: LABEL_WIDTH }}
                 >
                   <span
-                    className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[statusGroup(entry.status)])}
+                    className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[entryStatusGroup(entry)])}
                   />
                   <MethodLabel method={entry.method} className="w-12 shrink-0 text-2xs" />
                   <span className="truncate font-mono" title={entry.url}>

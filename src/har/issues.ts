@@ -30,7 +30,9 @@ const ms = (value: number) => (value >= 1000 ? `${(value / 1000).toFixed(2)} s` 
 const single = (entry: Entry, metric: string): IssueItem => ({ entries: [entry], metric })
 
 function httpErrors(entries: readonly Entry[]): IssueItem[] {
-  return entries.filter((e) => e.status >= 400 || e.status === 0).map((e) => single(e, ms(e.time)))
+  return entries
+    .filter((e) => !e.pending && (e.status >= 400 || e.status === 0))
+    .map((e) => single(e, ms(e.time)))
 }
 
 function slowTtfb(entries: readonly Entry[]): IssueItem[] {

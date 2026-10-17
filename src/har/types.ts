@@ -61,6 +61,7 @@ export interface HarResponse {
   redirectURL: string
   headersSize: number
   bodySize: number
+  _pending?: boolean
 }
 
 export interface HarNameValue {
@@ -116,6 +117,7 @@ export interface Entry {
   path: string
   status: number
   statusText: string
+  pending: boolean
   /** Short resource type label: json, js, css, html, img, font… */
   type: string
   /** Decoded content size in bytes, or -1 when unknown. */
@@ -129,7 +131,7 @@ export interface Entry {
   httpVersion: string
 }
 
-export type StatusGroup = '1xx' | '2xx' | '3xx' | '4xx' | '5xx' | 'failed'
+export type StatusGroup = 'pending' | '1xx' | '2xx' | '3xx' | '4xx' | '5xx' | 'failed'
 
 export interface ValidationIssue {
   /** Entry id, or null for log-level problems. */

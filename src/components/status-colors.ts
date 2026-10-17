@@ -3,6 +3,7 @@ import type { StatusGroup } from '@/har/types'
 
 /** Status dot fills. Always paired with the printed code, never color alone. */
 export const STATUS_DOT: Record<StatusGroup, string> = {
+  pending: 'bg-subtle-foreground/60',
   '1xx': 'bg-info',
   '2xx': 'bg-success',
   '3xx': 'bg-info',
@@ -12,6 +13,7 @@ export const STATUS_DOT: Record<StatusGroup, string> = {
 }
 
 export const STATUS_TEXT: Record<StatusGroup, string> = {
+  pending: 'text-muted-foreground',
   '1xx': 'text-foreground',
   '2xx': 'text-foreground',
   '3xx': 'text-foreground',

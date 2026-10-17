@@ -1,4 +1,4 @@
-import { statusGroup } from './parse'
+import { entryStatusGroup } from './parse'
 import type { Entry, StatusGroup } from './types'
 
 export type FacetKind = 'methods' | 'statuses' | 'types' | 'domains'
@@ -9,6 +9,7 @@ export interface FacetOption {
 }
 
 export const STATUS_LABELS: Record<StatusGroup, string> = {
+  pending: 'Pending',
   '1xx': 'Informational',
   '2xx': 'Success',
   '3xx': 'Redirect',
@@ -17,7 +18,7 @@ export const STATUS_LABELS: Record<StatusGroup, string> = {
   failed: 'Failed',
 }
 
-const STATUS_ORDER: StatusGroup[] = ['1xx', '2xx', '3xx', '4xx', '5xx', 'failed']
+const STATUS_ORDER: StatusGroup[] = ['pending', '1xx', '2xx', '3xx', '4xx', '5xx', 'failed']
 const METHOD_ORDER = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']
 const TYPE_ORDER = [
   'html',
@@ -63,7 +64,7 @@ export interface FacetCounts {
 
 export function computeFacets(entries: readonly Entry[]): FacetCounts {
   return {
-    statuses: tally(entries, (e) => statusGroup(e.status)).sort(rankBy(STATUS_ORDER)),
+    statuses: tally(entries, entryStatusGroup).sort(rankBy(STATUS_ORDER)),
     methods: tally(entries, (e) => e.method).sort(rankBy(METHOD_ORDER)),
     types: tally(entries, (e) => e.type).sort(rankBy(TYPE_ORDER)),
     domains: tally(entries, (e) => e.host).sort(

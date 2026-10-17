@@ -30,6 +30,7 @@ export function FileMenu() {
   const count = useAppStore((s) => s.entries.length)
   const creator = useAppStore((s) => s.log?.creator)
   const isDirty = useAppStore((s) => s.isDirty)
+  const source = useAppStore((s) => s.source)
 
   return (
     <DropdownMenu>
@@ -80,10 +81,12 @@ export function FileMenu() {
           <FlaskConical /> Load sample capture
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void persistSession({ notify: true })}>
-          <Save /> Save session
-          <DropdownMenuShortcut>{MOD} S</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        {source !== 'live' && (
+          <DropdownMenuItem onSelect={() => void persistSession({ notify: true })}>
+            <Save /> Save session
+            <DropdownMenuShortcut>{MOD} S</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem variant="danger" onSelect={() => void closeCapture()}>
           <X /> Close capture
         </DropdownMenuItem>

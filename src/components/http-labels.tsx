@@ -28,11 +28,12 @@ interface StatusProps {
   status: number
   statusText?: string
   className?: string
+  pending?: boolean
 }
 
 /** Dot + code; color is never the only signal (the code is always printed). */
-export function StatusCode({ status, statusText, className }: StatusProps) {
-  const group = statusGroup(status)
+export function StatusCode({ status, statusText, pending, className }: StatusProps) {
+  const group = pending ? 'pending' : statusGroup(status)
   return (
     <span
       className={cn(
@@ -42,8 +43,10 @@ export function StatusCode({ status, statusText, className }: StatusProps) {
       )}
     >
       <span className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[group])} aria-hidden />
-      <span>{status || 'failed'}</span>
-      {statusText && <span className="truncate font-sans text-muted-foreground">{statusText}</span>}
+      <span>{pending ? 'pending' : status || 'failed'}</span>
+      {!pending && statusText && (
+        <span className="truncate font-sans text-muted-foreground">{statusText}</span>
+      )}
     </span>
   )
 }

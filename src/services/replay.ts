@@ -1,4 +1,5 @@
 import type { Entry } from '@/har/types'
+import { hostHooks, isStreamConnected, streamReplay } from './stream'
 
 export interface ReplayResult {
   status: number
@@ -65,4 +66,11 @@ export async function replayRequest(entry: Entry, signal?: AbortSignal): Promise
         : text,
     durationMs: performance.now() - started,
   }
+}
+
+/** Replays via host hook or live stream when connected, else from this page. */
+export function replayEntry(entry: Entry, signal?: AbortSignal): Promise<ReplayResult> {
+  const onReplay = hostHooks()?.onReplay
+  if (onReplay) return onReplay(entry, signal)
+  return isStreamConnected() ? streamReplay(entry.id, signal) : replayRequest(entry, signal)
 }

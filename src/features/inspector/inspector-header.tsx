@@ -27,7 +27,12 @@ export function InspectorHeader({ entry }: { entry: Entry }) {
     <header className="shrink-0 border-b px-4 pt-3 pb-3">
       <div className="flex items-center gap-2">
         <MethodLabel method={entry.method} className="text-[13px]" />
-        <StatusCode status={entry.status} statusText={entry.statusText} className="text-[13px]" />
+        <StatusCode
+          status={entry.status}
+          statusText={entry.statusText}
+          pending={entry.pending}
+          className="text-[13px]"
+        />
         <div className="ml-auto flex items-center gap-0.5">
           <Tooltip content="Previous request" shortcut={['K']}>
             <Button

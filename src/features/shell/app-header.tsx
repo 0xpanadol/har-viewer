@@ -7,6 +7,7 @@ import { MOD } from '@/lib/platform'
 import { useAppStore } from '@/store'
 import { ExportMenu } from './export-menu'
 import { FileMenu } from './file-menu'
+import { LiveStatus } from './live-status'
 import { ThemeMenu } from './theme-menu'
 import { ValidationPopover } from './validation-popover'
 
@@ -22,6 +23,7 @@ export function AppHeader() {
           /
         </span>
         <FileMenu />
+        <LiveStatus />
         <ValidationPopover />
       </div>
 
